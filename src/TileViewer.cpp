@@ -1,8 +1,8 @@
-#include "TextureViewer.hpp"
+#include "TileViewer.hpp"
 #include <iostream>
 
-std::unique_ptr<TextureViewer> TextureViewer::create(SDL_Renderer *renderer) {
-	auto texture_viewer = std::make_unique<TextureViewer>();
+std::unique_ptr<TileViewer> TileViewer::create(SDL_Renderer *renderer) {
+	auto texture_viewer = std::make_unique<TileViewer>();
 
 	texture_viewer->texture = SDL_CreateTexture(
 			renderer,
@@ -19,7 +19,7 @@ std::unique_ptr<TextureViewer> TextureViewer::create(SDL_Renderer *renderer) {
 	return texture_viewer;
 }
 
-void TextureViewer::draw(const RomData& rom_data) {
+void TileViewer::draw(const Rom_Viewer& viewer, const Palette& palette, int offset_tiles_y) {
 	uint32_t *pixels;
 	int pitch;
 
@@ -29,10 +29,10 @@ void TextureViewer::draw(const RomData& rom_data) {
 
 	for(int j = 0; j < HEIGHT; j++) {
 		for(int i = 0; i < WIDTH; i++) {
-			int tile_id = (i / TILE_SIZE) + (j / TILE_SIZE + rom_data.offset_tiles_y) * TILES_PER_ROW;
+			int tile_id = (i / TILE_SIZE) + (j / TILE_SIZE + offset_tiles_y) * TILES_PER_ROW;
 
 			int color_id = Rom_GetTilePixelColor(
-					&rom_data.viewer,
+					&viewer,
 					tile_id,
 					i % TILE_SIZE,
 					j % TILE_SIZE
@@ -42,18 +42,18 @@ void TextureViewer::draw(const RomData& rom_data) {
 				continue;
 			} 
 
-			pixels[i + j * pitch] = rom_data.palette.at(color_id);
+			pixels[i + j * pitch] = palette.at(color_id);
 		}
 	}
 
 	SDL_UnlockTexture(texture);
 }
 
-SDL_Texture * TextureViewer::getTexture(void) {
+SDL_Texture * TileViewer::getTexture(void) {
 	return texture;
 }
 
-TextureViewer::~TextureViewer(void) {
+TileViewer::~TileViewer(void) {
 	if(texture != NULL) {
 		SDL_DestroyTexture(texture);
 	}

@@ -5,8 +5,9 @@
 #include <vector>
 #include <memory>
 
-#include "TextureViewer.hpp"
+#include "TileViewer.hpp"
 #include "RomData.hpp"
+#include "Canvas.hpp"
 
 class App {
 	public:
@@ -16,6 +17,9 @@ class App {
 
 	private:
 		void loop(void);
+		void renderMenubar(void);
+		void renderToolbar(void);
+		void renderCanvasList(void);
 		void beginRender(void);
 		void endRender(void);
 
@@ -23,8 +27,8 @@ class App {
 		SDL_Renderer *renderer = NULL;
 		bool quit = false;
 
-		RomData rom;
-		std::unique_ptr<TextureViewer> texture_viewer;
+		std::unique_ptr<TileViewer> tile_viewer;
+		std::vector<std::unique_ptr<Canvas>> canvas_list;
 };
 
 #endif

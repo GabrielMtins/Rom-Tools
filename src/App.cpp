@@ -1,17 +1,17 @@
 #include "App.hpp"
 
 #include <iostream>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
-
 
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
 
 App::App(void) {
-	if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
 		std::cerr << SDL_GetError() << '\n';
 		exit(-1);
 	}
@@ -49,9 +49,11 @@ App::App(void) {
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 	ImGui::StyleColorsDark();
-	//ImGui::StyleColorsLight();
+	//SetupImGuiPaperAndInkStyle();
+	//SetupImGuiDarkStyle();
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.ScaleAllSizes(main_scale);
@@ -60,18 +62,11 @@ App::App(void) {
 	ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
 	ImGui_ImplSDLRenderer2_Init(renderer);
 
-	if(rom.load("tools/roms/sml2.gb")) {
-		std::cout << "loaded!\n";
-	}
+	tile_viewer = TileViewer::create(renderer);
+	canvas_list.push_back(Canvas::create(renderer, "tools/roms/smb_og.nes"));
+	canvas_list.push_back(Canvas::create(renderer, "tools/roms/smb_og.nes"));
 
-	texture_viewer = TextureViewer::create(renderer);
-
-	if(texture_viewer == nullptr) {
-		std::cerr << "Failed to create texture viewer. " << SDL_GetError() << '\n';
-		exit(-1);
-	}
-
-	rom.setViewerFormat(ROM_TYPE_GB);
+	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 }
 
 void App::run(void) {
@@ -106,24 +101,17 @@ void App::loop(void) {
 
 	beginRender();
 
-	ImGuiViewport* viewport = ImGui::GetMainViewport();
-	ImVec2 windowPos = viewport->Pos;
-	ImVec2 windowSize = viewport->Size;
+	ImGui::DockSpaceOverViewport();
 
-	ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
-	ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
-	
-	ImGui::Begin(
-			"MainWindowFullscreen",
-			nullptr,
-			ImGuiWindowFlags_NoTitleBar |
-			ImGuiWindowFlags_NoResize |
-			ImGuiWindowFlags_NoMove | 
-			ImGuiWindowFlags_MenuBar |
-			ImGuiWindowFlags_NoCollapse
-			);
+	renderMenubar();
+	renderToolbar();
+	renderCanvasList();
 
-	if(ImGui::BeginMenuBar()) {
+	endRender();
+}
+
+void App::renderMenubar(void) {
+	if(ImGui::BeginMainMenuBar()) {
 		if(ImGui::BeginMenu("File")) {
 			ImGui::MenuItem("New");
 			ImGui::MenuItem("Open");
@@ -132,45 +120,50 @@ void App::loop(void) {
 			ImGui::MenuItem("Exit");
 			ImGui::EndMenu();
 		}
-	
-		ImGui::EndMenuBar();
 
-	}
+		if(ImGui::BeginMenu("Edit")) {
+			ImGui::MenuItem("Undo");
+			ImGui::MenuItem("Cut");
+			ImGui::MenuItem("Copy");
 
-	/*
-	ImGui::BeginGroup();
-	for(int i = 0; i < 10; i++) {
-		if(i % 2 == 1) {
-			ImGui::SameLine();
+			ImGui::Separator();
+
+			ImGui::MenuItem("Preferences");
+
+			ImGui::EndMenu();
 		}
+	
+		ImGui::EndMainMenuBar();
 
-		ImGui::Button((std::string("oi") + std::to_string(i)).c_str(), ImVec2(64.0f, 64.0f));
 	}
-	ImGui::EndGroup();
+}
 
-	ImGui::SameLine();
-	*/
+void App::renderToolbar(void) {
+	ImGui::Begin("Toolbar");
 
-	ImGui::BeginGroup();
-	static int value = 0;
-	rom.offset_tiles_y = value;
-	texture_viewer->draw(rom);
-
-	ImGui::VSliderInt("##vslider", ImVec2(36, 800), &value, rom.viewer.num_tiles / TextureViewer::TILES_PER_ROW - TextureViewer::TILES_PER_ROW, 0, "");
-	//ImGui::DragInt("##drag", &value, 1.0f, rom.viewer.num_tiles / TextureViewer::TILES_PER_ROW - TextureViewer::TILES_PER_ROW, 0, "");
-	ImGui::SameLine();
-
-	ImGui::Image(
-			(ImTextureID) (texture_viewer->getTexture()),
-			ImVec2(800, 800)
-			);
-	ImGui::EndGroup();
+	ImGui::Button("hi0");
+	ImGui::Button("hi1");
+	ImGui::Button("hi2");
+	ImGui::Button("hi3");
 
 	ImGui::End();
+}
 
-	//;;ImGui::Begin()
+void App::renderCanvasList(void) {
+	for(auto& canvas : canvas_list) {
+		canvas->draw(renderer, *tile_viewer);
+	}
 
-	endRender();
+	canvas_list.erase(
+			std::remove_if(
+				canvas_list.begin(),
+				canvas_list.end(),
+				[](const std::unique_ptr<Canvas>& canvas) {
+					return !canvas->isOpen();
+				}
+				),
+			canvas_list.end()
+			);
 }
 
 void App::beginRender(void) {
