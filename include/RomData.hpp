@@ -14,7 +14,6 @@ struct RomData {
 	std::vector<uint8_t> data;
 	Palette palette = default_palette;
 	Rom_Viewer viewer;
-	int offset_tiles_y = 0;
 
 	bool load(const std::string& filename);
 	void setViewerFormat(Rom_Format format);

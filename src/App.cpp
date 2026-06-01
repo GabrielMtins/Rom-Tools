@@ -48,7 +48,7 @@ App::App(void) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 	ImGui::StyleColorsDark();
@@ -64,7 +64,7 @@ App::App(void) {
 
 	tile_viewer = TileViewer::create(renderer);
 	canvas_list.push_back(Canvas::create(renderer, "tools/roms/smb_og.nes"));
-	canvas_list.push_back(Canvas::create(renderer, "tools/roms/smb_og.nes"));
+	canvas_list.push_back(Canvas::create(renderer, "tools/roms/dk.nes"));
 
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 }

@@ -35,7 +35,10 @@ std::unique_ptr<Canvas> Canvas::create(SDL_Renderer *renderer, const std::string
 }
 
 void Canvas::draw(SDL_Renderer *renderer, TileViewer& tile_viewer) {
-	renderToTexture(renderer, tile_viewer);
+	if(focused) {
+		renderToTexture(renderer, tile_viewer);
+	}
+
 	drawCanvasWindow();
 }
 
@@ -103,9 +106,12 @@ void Canvas::renderLines(SDL_Renderer *renderer) {
 
 void Canvas::drawCanvasWindow(void) {
 	ImVec2 area_available;
+	focused = false;
 
 	ImGui::Begin(window_name.c_str(), &open);
 	area_available = ImGui::GetContentRegionAvail();
+
+	handleInput();
 
 	ImGui::VSliderInt(
 			"##vslidery",
@@ -120,7 +126,7 @@ void Canvas::drawCanvasWindow(void) {
 
 	ImGui::BeginGroup();
 
-	ImGui::SetNextItemWidth(-1.0f);
+	ImGui::SetNextItemWidth(horizontal_slider_width);
 	ImGui::SliderInt("##vsliderx", &offset_tiles_x, 0, getMaxOffsetXPerZoom(), "");
 
 	if(offset_tiles_x >= getMaxOffsetXPerZoom()) offset_tiles_x = getMaxOffsetXPerZoom();
@@ -133,14 +139,16 @@ void Canvas::drawCanvasWindow(void) {
 
 	float less = fminf(area_available.x, area_available.y);
 
+	horizontal_slider_width = less;
+
 	ImGui::Image(
 			(ImTextureID) (texture),
 			ImVec2(less, less)
 			);
 
-	ImGui::EndGroup();
+	handleClickImage();
 
-	handleInput();
+	ImGui::EndGroup();
 
 	ImGui::End();
 }
@@ -154,18 +162,6 @@ SDL_Rect Canvas::computeSrcRect(void) const {
 	src.x = offset_tiles_x * TileViewer::TILE_SIZE;
 	src.y = 0;
 
-	/*
-	src.x = (offset_tiles_x * TileViewer::TILE_SIZE - src.w / 2);
-
-	if(src.x < 0) src.x = 0;
-	if(src.x > TileViewer::WIDTH - src.w) src.x = TileViewer::WIDTH - src.w;
-	*/
-
-	//src.y = (TileViewer::HEIGHT - src.h) / 2;
-	//src.y = ((TileViewer::TILES_PER_COLUMN - TileViewer::TILES_PER_COLUMN / zoom_level) / 2) * TileViewer::TILE_SIZE;
-
-	//if(src.y > TileViewer::HEIGHT - src.h) src.y = TileViewer::HEIGHT - src.h;
-
 	return src;
 }
 
@@ -174,12 +170,100 @@ void Canvas::handleInput(void) {
 		return;
 	}
 
+	focused = true;
+
 	if(ImGui::IsKeyPressed(ImGuiKey_Minus)) {
 		decreaseZoom();
 	}
  
-	if(ImGui::IsKeyPressed(ImGuiKey_Equal)) {
+	if(ImGui::IsKeyPressed(ImGuiKey_Equal) && ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
 		increaseZoom();
+	}
+
+	if(ImGui::IsKeyPressed(ImGuiKey_LeftArrow)) {
+		offset_tiles_x--;
+	}
+
+	if(ImGui::IsKeyPressed(ImGuiKey_RightArrow)) {
+		offset_tiles_x++;
+	}
+
+	if(ImGui::IsKeyPressed(ImGuiKey_DownArrow)) {
+		offset_tiles_y++;
+	}
+
+	if(ImGui::IsKeyPressed(ImGuiKey_UpArrow)) {
+		offset_tiles_y--;
+	}
+
+	if(ImGui::IsKeyPressed(ImGuiKey_PageDown)) {
+		offset_tiles_y += TileViewer::TILES_PER_COLUMN;
+	}
+
+	if(ImGui::IsKeyPressed(ImGuiKey_PageUp)) {
+		offset_tiles_y -= TileViewer::TILES_PER_COLUMN;
+	}
+
+	if(ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftCtrl)) {
+		float mouse_wheel = ImGui::GetIO().MouseWheel;
+
+		if(mouse_wheel < 0.0f) {
+			decreaseZoom();
+		}
+
+		if(mouse_wheel > 0.0f) {
+			increaseZoom();
+		}
+	}
+	else {
+		if(ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
+			offset_tiles_x += int(-ImGui::GetIO().MouseWheel * 1.0f);
+		} else {
+			offset_tiles_y += int(-ImGui::GetIO().MouseWheel * 1.0f);
+		}
+	}
+
+	if(ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_Z)) {
+		undo_system.undoAction(rom.viewer);
+	}
+
+	offset_tiles_x += int(-ImGui::GetIO().MouseWheelH);
+
+	if(ImGui::IsKeyPressed(ImGuiKey_1)) {
+		selected_color = 0;
+	}
+	if(ImGui::IsKeyPressed(ImGuiKey_2)) {
+		selected_color = 1;
+	}
+	if(ImGui::IsKeyPressed(ImGuiKey_3)) {
+		selected_color = 2;
+	}
+	if(ImGui::IsKeyPressed(ImGuiKey_4)) {
+		selected_color = 3;
+	}
+}
+
+void Canvas::handleClickImage(void) {
+	if(!ImGui::IsItemHovered()) {
+		return;
+	}
+
+	if(!ImGui::IsWindowFocused()) {
+		return;
+	}
+
+	ImVec2 image_pos = ImGui::GetItemRectMin();
+	ImVec2 image_size = ImGui::GetItemRectSize();
+
+	if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+		ImVec2 mouse_pos = ImGui::GetMousePos();
+
+		int x = (mouse_pos.x - image_pos.x) / image_size.x * TileViewer::WIDTH;
+		int y = (mouse_pos.y - image_pos.y) / image_size.y * TileViewer::HEIGHT;
+
+		putPixel(x, y, selected_color);
+	} else {
+		undo_system.endAction();
 	}
 }
 
@@ -214,6 +298,34 @@ int Canvas::getMaxOffsetYPerZoom(void) const {
 			(rom.viewer.num_tiles % size_t(TileViewer::TILES_PER_ROW) != 0)
 			) - 
 		TileViewer::TILES_PER_COLUMN / zoom_level;
+}
+
+void Canvas::putPixel(int x, int y, int selected_color) {
+	PixelTile px = convertToPixelTile(x, y);
+
+	undo_system.addTile(rom.viewer, px.tile_id);
+
+	Rom_SetTilePixelColor(
+			&rom.viewer,
+			px.tile_id,
+			px.x,
+			px.y,
+			selected_color
+			);
+}
+
+Canvas::PixelTile Canvas::convertToPixelTile(int x, int y) const {
+	int tile_size = TileViewer::TILE_SIZE * zoom_level;
+
+	int tile_x = (x / tile_size) + offset_tiles_x;
+	int tile_y = (y / tile_size) + offset_tiles_y;
+
+	size_t tile_id = tile_x + tile_y * TileViewer::TILES_PER_ROW;
+
+	int inside_x = ((x % tile_size) / zoom_level) % TileViewer::TILE_SIZE;
+	int inside_y = ((y % tile_size) / zoom_level) % TileViewer::TILE_SIZE;
+
+	return PixelTile{tile_id, inside_x, inside_y};
 }
 
 Canvas::~Canvas(void) {
