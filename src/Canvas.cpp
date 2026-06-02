@@ -306,9 +306,25 @@ void Canvas::handleToolBrush(void) {
 	int x = normal_pos.x * TileViewer::WIDTH;
 	int y = normal_pos.y * TileViewer::HEIGHT;
 
-	if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
 		undo_system.beginAction();
-		putPixel(x, y, selected_color, true);
+		
+		tools.brush.old_x = x;
+		tools.brush.old_y = y;
+	}
+
+	if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+		bresenhamLine(
+				tools.brush.old_x,
+				tools.brush.old_y,
+				x,
+				y,
+				selected_color,
+				true
+				);
+
+		tools.brush.old_x = x;
+		tools.brush.old_y = y;
 	} else {
 		undo_system.endAction(rom.viewer);
 	}
@@ -560,6 +576,35 @@ bool Canvas::putPixel(int x, int y, int selected_color, bool check_for_selection
 			);
 
 	return true;
+}
+
+void Canvas::bresenhamLine(int x1, int y1, int x2, int y2, int selected_color, bool check_for_selection) {
+	int dx = std::abs(x2 - x1);
+	int dy = std::abs(y2 - y1);
+
+	int sx = (x1 < x2) ? 1 : -1;
+	int sy = (y1 < y2) ? 1 : -1;
+
+	int err = dx - dy;
+	int x = x1, y = y1;
+
+	while(1) {
+		putPixel(x, y, selected_color, check_for_selection);
+
+		if(x == x2 && y == y2) break;
+
+		int new_err = 2 * err;
+
+		if(new_err > -dy) {
+			err -= dy;
+			x += sx;
+		}
+
+		if(new_err < dx) {
+			err += dx;
+			y += sy;
+		}
+	}
 }
 
 int Canvas::getPixel(int x, int y) const {

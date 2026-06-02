@@ -70,6 +70,7 @@ class Canvas {
 		/* x is between 0 and TileViewer::WIDTH 
 		 * y is between 0 and TileViewer::HEIGHT */
 		bool putPixel(int x, int y, int selected_color, bool check_for_selection = false);
+		void bresenhamLine(int x1, int y1, int x2, int y2, int selected_color, bool check_for_selection=false);
 		void floodVisible(int selected_color, bool check_for_selection=false);
 		void floodFill(int start_x, int start_y, int selected_color, bool check_for_selection=false);
 		int getPixel(int x, int y) const;
@@ -95,6 +96,10 @@ class Canvas {
 		Tool tool = TOOL_SELECT;
 
 		struct {
+			struct {
+				int old_x, old_y;
+			} brush;
+
 			struct {
 				SDL_Rect rect = {0, 0, 0, 0};
 				int start_x, start_y, end_x, end_y;
