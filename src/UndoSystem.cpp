@@ -185,10 +185,7 @@ void UndoSystem::cleanToFitMaxSize(void) {
 				undo_stack.begin() + actions_to_remove
 				);
 
-		if(history.num_actions >= actions_to_remove) {
-			history.num_actions -= actions_to_remove;
-			history.num_tiles -= tiles_to_remove;
-		} else {
+		if(history.num_actions >= undo_stack.size()) {
 			history.num_actions = 0;
 			history.num_tiles = 0;
 		}
