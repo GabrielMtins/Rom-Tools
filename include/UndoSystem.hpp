@@ -17,6 +17,7 @@ class UndoSystem {
 	public:
 		UndoSystem(void);
 
+		void beginAction(void);
 		void endAction(void);
 		void addTile(const Rom_Viewer& viewer, size_t tile_index);
 		void undoAction(Rom_Viewer& viewer);
@@ -24,11 +25,16 @@ class UndoSystem {
 	private:
 		bool isTileOnStack(size_t tile_index) const;
 		void undoTile(Rom_Viewer& viewer, const UndoTile& tile);
+		void cleanToFitMaxSize(void);
 
-		std::vector<UndoTile> tiles;
+		std::vector<UndoTile> old_tiles;
 		std::vector<size_t> undo_stack;
 
 		size_t next_undo_stack = 0;
+
+		bool action;
+
+		static constexpr size_t MAX_TILES = 4096;
 };
 
 #endif

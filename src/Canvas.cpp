@@ -261,6 +261,7 @@ void Canvas::handleClickImage(void) {
 		int x = (mouse_pos.x - image_pos.x) / image_size.x * TileViewer::WIDTH;
 		int y = (mouse_pos.y - image_pos.y) / image_size.y * TileViewer::HEIGHT;
 
+		undo_system.beginAction();
 		putPixel(x, y, selected_color);
 	} else {
 		undo_system.endAction();
