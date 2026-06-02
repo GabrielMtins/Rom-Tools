@@ -20,6 +20,7 @@ class App {
 		void renderMenubar(void);
 		void renderToolbar(void);
 		void renderCanvasList(void);
+		void handleInput(void);
 		void beginRender(void);
 		void endRender(void);
 
@@ -29,6 +30,8 @@ class App {
 
 		std::unique_ptr<TileViewer> tile_viewer;
 		std::vector<std::unique_ptr<Canvas>> canvas_list;
+
+		Canvas::Tool tool = Canvas::TOOL_BRUSH;
 };
 
 #endif

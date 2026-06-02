@@ -99,6 +99,8 @@ void App::loop(void) {
 		}
 	}
 
+	handleInput();
+
 	beginRender();
 
 	ImGui::DockSpaceOverViewport();
@@ -151,6 +153,7 @@ void App::renderToolbar(void) {
 
 void App::renderCanvasList(void) {
 	for(auto& canvas : canvas_list) {
+		canvas->setTool(tool);
 		canvas->draw(renderer, *tile_viewer);
 	}
 
@@ -164,6 +167,20 @@ void App::renderCanvasList(void) {
 				),
 			canvas_list.end()
 			);
+}
+
+void App::handleInput(void) {
+	if(ImGui::IsKeyPressed(ImGuiKey_B)) {
+		tool = Canvas::TOOL_BRUSH;
+	}
+
+	if(ImGui::IsKeyPressed(ImGuiKey_V)) {
+		tool = Canvas::TOOL_SELECT;
+	}
+
+	if(ImGui::IsKeyPressed(ImGuiKey_F)) {
+		tool = Canvas::TOOL_BUCKET;
+	}
 }
 
 void App::beginRender(void) {

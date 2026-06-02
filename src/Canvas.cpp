@@ -42,6 +42,10 @@ void Canvas::draw(SDL_Renderer *renderer, TileViewer& tile_viewer) {
 	drawCanvasWindow();
 }
 
+void Canvas::setTool(Canvas::Tool tool) {
+	this->tool = tool;
+}
+
 bool Canvas::isOpen(void) const {
 	return open;
 }
@@ -62,8 +66,28 @@ void Canvas::renderToTexture(SDL_Renderer *renderer, TileViewer& tile_viewer) {
 	SDL_RenderCopy(renderer, tile_viewer.getTexture(), &src, NULL);
 
 	renderLines(renderer);
+	renderSelectRect(renderer);
 
 	SDL_SetRenderTarget(renderer, NULL);
+}
+
+void Canvas::renderSelectRect(SDL_Renderer *renderer) {
+	if(!tools.select.selected) {
+		return;
+	}
+
+	SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0x88);
+	int tile_size = getTileSizeZoomed();
+
+	SDL_Rect select_rect_transformed = {
+		(tools.select.rect.x - offset_tiles_x) * tile_size,
+		(tools.select.rect.y - offset_tiles_y) * tile_size,
+		(tools.select.rect.w) * tile_size,
+		(tools.select.rect.h) * tile_size,
+	};
+
+
+	SDL_RenderFillRect(renderer, &select_rect_transformed);
 }
 
 void Canvas::renderLines(SDL_Renderer *renderer) {
@@ -241,6 +265,10 @@ void Canvas::handleInput(void) {
 	if(ImGui::IsKeyPressed(ImGuiKey_4)) {
 		selected_color = 3;
 	}
+
+	if(ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+		tools.select.selected = false;
+	}
 }
 
 void Canvas::handleClickImage(void) {
@@ -252,20 +280,117 @@ void Canvas::handleClickImage(void) {
 		return;
 	}
 
-	ImVec2 image_pos = ImGui::GetItemRectMin();
-	ImVec2 image_size = ImGui::GetItemRectSize();
+	#define EXPAND_AS_CASE(type, function) case type: function(); break;
+
+	switch(tool) {
+		FOR_TOOL_LIST(EXPAND_AS_CASE)
+	}
+
+	#undef EXPAND_AS_CASE
+
+}
+
+void Canvas::handleToolBrush(void) {
+	ImVec2 normal_pos = getNormalPositionOnCanvas();
+
+	int x = normal_pos.x * TileViewer::WIDTH;
+	int y = normal_pos.y * TileViewer::HEIGHT;
 
 	if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-		ImVec2 mouse_pos = ImGui::GetMousePos();
-
-		int x = (mouse_pos.x - image_pos.x) / image_size.x * TileViewer::WIDTH;
-		int y = (mouse_pos.y - image_pos.y) / image_size.y * TileViewer::HEIGHT;
-
 		undo_system.beginAction();
-		putPixel(x, y, selected_color);
+		putPixel(x, y, selected_color, true);
 	} else {
 		undo_system.endAction();
 	}
+}
+
+void Canvas::handleToolSelect(void) {
+	ImVec2 normal_pos = getNormalPositionOnCanvas();
+	int w, h;
+
+	int x = floorf(normal_pos.x * int(TileViewer::TILES_PER_ROW / zoom_level)) + offset_tiles_x;
+	int y = floorf(normal_pos.y * int(TileViewer::TILES_PER_COLUMN / zoom_level)) + offset_tiles_y;
+
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+		tools.select.start_x = x;
+		tools.select.start_y = y;
+		tools.select.selected = true;
+	}
+
+	if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+		tools.select.end_x = x;
+		tools.select.end_y = y;
+	}
+
+	w = tools.select.end_x - tools.select.start_x;
+	h = tools.select.end_y - tools.select.start_y;
+
+	tools.select.rect = SDL_Rect{
+		((w >= 0) ? (tools.select.start_x) : (tools.select.end_x)),
+		((h >= 0) ? (tools.select.start_y) : (tools.select.end_y)),
+		((w >= 0) ? (w + 1) : (-w + 1)),
+		((h >= 0) ? (h + 1) : (-h + 1)),
+	};
+}
+
+void Canvas::handleToolBucket(void) {
+	if(!ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+		return;
+	}
+
+	ImVec2 normal_pos = getNormalPositionOnCanvas();
+
+	int start_x = normal_pos.x * TileViewer::WIDTH;
+	int start_y = normal_pos.y * TileViewer::HEIGHT;
+
+	int first_color = getPixel(start_x, start_y);
+
+	if(first_color == selected_color) {
+		return;
+	}
+
+	std::vector<std::pair<int, int>> pixel_list;
+
+	pixel_list.emplace_back(start_x, start_y);
+
+	undo_system.beginAction();
+
+	while(!pixel_list.empty()) {
+		auto [x, y] = pixel_list.back();
+		pixel_list.pop_back();
+
+		if(x < 0 || y < 0 || x >= TileViewer::WIDTH || y >= TileViewer::HEIGHT) {
+			continue;
+		}
+
+		int c = getPixel(x, y);
+
+		if(c != first_color) {
+			continue;
+		}
+
+		if(!putPixel(x, y, selected_color, true)) {
+			continue;
+		}
+
+		pixel_list.emplace_back(x + zoom_level, y);
+		pixel_list.emplace_back(x - zoom_level, y);
+		pixel_list.emplace_back(x, y + zoom_level);
+		pixel_list.emplace_back(x, y - zoom_level);
+	}
+
+	undo_system.endAction();
+}
+
+ImVec2 Canvas::getNormalPositionOnCanvas(void) const {
+	ImVec2 image_pos = ImGui::GetItemRectMin();
+	ImVec2 image_size = ImGui::GetItemRectSize();
+	ImVec2 mouse_pos = ImGui::GetMousePos();
+
+	return ImVec2(
+			(mouse_pos.x - image_pos.x) / image_size.x,
+			(mouse_pos.y - image_pos.y) / image_size.y
+			);
 }
 
 void Canvas::increaseZoom(void) {
@@ -301,8 +426,35 @@ int Canvas::getMaxOffsetYPerZoom(void) const {
 		TileViewer::TILES_PER_COLUMN / zoom_level;
 }
 
-void Canvas::putPixel(int x, int y, int selected_color) {
+int Canvas::getTileSizeZoomed(void) const {
+	return (WIDTH / TileViewer::WIDTH) * TileViewer::TILE_SIZE * zoom_level;
+}
+
+bool Canvas::isTileInsideSelection(size_t tile_id) const {
+	int x = tile_id % TileViewer::TILES_PER_ROW;
+	int y = tile_id / TileViewer::TILES_PER_ROW;
+
+	if(!tools.select.selected) {
+		return false;
+	}
+
+	const SDL_Rect& r = tools.select.rect;
+
+	if(x < r.x || x >= r.x + r.w || y < r.y || y >= r.y + r.h) {
+		return false;
+	}
+
+	return true;
+}
+
+bool Canvas::putPixel(int x, int y, int selected_color, bool check_for_selection) {
 	PixelTile px = convertToPixelTile(x, y);
+
+	if(check_for_selection && tools.select.selected) {
+		if(!isTileInsideSelection(px.tile_id)) {
+			return false;
+		}
+	}
 
 	undo_system.addTile(rom.viewer, px.tile_id);
 
@@ -312,6 +464,19 @@ void Canvas::putPixel(int x, int y, int selected_color) {
 			px.x,
 			px.y,
 			selected_color
+			);
+
+	return true;
+}
+
+int Canvas::getPixel(int x, int y) const {
+	PixelTile px = convertToPixelTile(x, y);
+
+	return Rom_GetTilePixelColor(
+			&rom.viewer,
+			px.tile_id,
+			px.x,
+			px.y
 			);
 }
 
