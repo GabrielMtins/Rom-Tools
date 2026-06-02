@@ -337,12 +337,34 @@ void Canvas::handleToolBucket(void) {
 	if(!ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
 		return;
 	}
+	
+	bool fill_all = ImGui::IsKeyDown(ImGuiKey_LeftShift);
+
+	if(fill_all) {
+		undo_system.beginAction();
+		floodVisible(selected_color, true);
+		undo_system.endAction();
+	}
 
 	ImVec2 normal_pos = getNormalPositionOnCanvas();
 
 	int start_x = normal_pos.x * TileViewer::WIDTH;
 	int start_y = normal_pos.y * TileViewer::HEIGHT;
 
+	undo_system.beginAction();
+	floodFill(start_x, start_y, selected_color, true);
+	undo_system.endAction();
+}
+
+void Canvas::floodVisible(int selected_color, bool check_for_selection) {
+	for(int i = 0; i < TileViewer::WIDTH; i += zoom_level) {
+		for(int j = 0; j < TileViewer::HEIGHT; j += zoom_level) {
+			putPixel(i, j, selected_color, check_for_selection);
+		}
+	}
+}
+
+void Canvas::floodFill(int start_x, int start_y, int selected_color, bool check_for_selection) {
 	int first_color = getPixel(start_x, start_y);
 
 	if(first_color == selected_color) {
@@ -352,8 +374,6 @@ void Canvas::handleToolBucket(void) {
 	std::vector<std::pair<int, int>> pixel_list;
 
 	pixel_list.emplace_back(start_x, start_y);
-
-	undo_system.beginAction();
 
 	while(!pixel_list.empty()) {
 		auto [x, y] = pixel_list.back();
@@ -369,7 +389,7 @@ void Canvas::handleToolBucket(void) {
 			continue;
 		}
 
-		if(!putPixel(x, y, selected_color, true)) {
+		if(!putPixel(x, y, selected_color, check_for_selection)) {
 			continue;
 		}
 
@@ -378,8 +398,6 @@ void Canvas::handleToolBucket(void) {
 		pixel_list.emplace_back(x, y + zoom_level);
 		pixel_list.emplace_back(x, y - zoom_level);
 	}
-
-	undo_system.endAction();
 }
 
 ImVec2 Canvas::getNormalPositionOnCanvas(void) const {
