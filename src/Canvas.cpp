@@ -44,8 +44,16 @@ void Canvas::setTool(Canvas::Tool tool) {
 	this->tool = tool;
 }
 
+void Canvas::accessGlobalBuffer(TileBuffer& tile_copy_buffer) {
+	// TODO
+}
+
 bool Canvas::isOpen(void) const {
 	return open;
+}
+
+bool Canvas::isAskingForGlobalBufferAccess(void) const {
+	return ask_for_global_buffer_access;
 }
 
 void Canvas::renderToTexture(SDL_Renderer *renderer, TileViewer& tile_viewer) {
@@ -89,7 +97,7 @@ void Canvas::renderSelectRect(SDL_Renderer *renderer) {
 }
 
 void Canvas::renderLines(SDL_Renderer *renderer) {
-	SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
+	SDL_SetRenderDrawColor(renderer, 0xaa, 0xaa, 0xaa, 0xff);
 	int max_tiles_width = TileViewer::TILES_PER_ROW / zoom_level;
 	int max_tiles_height = TileViewer::TILES_PER_COLUMN / zoom_level;
 

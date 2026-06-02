@@ -26,8 +26,10 @@ class Canvas {
 
 		static std::unique_ptr<Canvas> create(SDL_Renderer *renderer, const std::string& rom_path);
 		void draw(SDL_Renderer *renderer, TileViewer& tile_viewer);
-		void copyToGlobalBuffer(TileBuffer& tile_copy_buffer);
 		void setTool(Tool tool);
+		void accessGlobalBuffer(TileBuffer& tile_copy_buffer);
+
+		bool isAskingForGlobalBufferAccess(void) const;
 		bool isOpen(void) const;
 
 		~Canvas(void);
@@ -101,6 +103,7 @@ class Canvas {
 		} tools;
 
 		TileBuffer tile_tmp_buffer;
+		bool ask_for_global_buffer_access = false;
 
 		static size_t unique_identifier;
 		static constexpr int WIDTH = 512;
