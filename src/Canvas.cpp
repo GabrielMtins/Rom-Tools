@@ -2,8 +2,6 @@
 
 #include "imgui.h"
 
-#include <unordered_map>
-
 #define MAX_ZOOM_LEVEL 16
 
 size_t Canvas::unique_identifier = 0;

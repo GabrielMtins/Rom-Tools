@@ -8,8 +8,10 @@
 
 #include <rom_tools.h>
 
+#include "TileRawData.hpp"
+
 struct UndoTile {
-	std::array<uint8_t, 64> tile;
+	TileRawData tile;
 	size_t tile_index;
 };
 

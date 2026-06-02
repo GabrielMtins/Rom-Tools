@@ -9,6 +9,8 @@
 #include "RomData.hpp"
 #include "Canvas.hpp"
 
+#include "TileBuffer.hpp"
+
 class App {
 	public:
 		App(void);
@@ -30,6 +32,8 @@ class App {
 
 		std::unique_ptr<TileViewer> tile_viewer;
 		std::vector<std::unique_ptr<Canvas>> canvas_list;
+
+		TileBuffer tile_copy_buffer;
 
 		Canvas::Tool tool = Canvas::TOOL_BRUSH;
 };

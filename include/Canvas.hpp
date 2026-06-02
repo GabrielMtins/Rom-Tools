@@ -4,6 +4,7 @@
 #include "RomData.hpp"
 #include "TileViewer.hpp"
 #include "UndoSystem.hpp"
+#include "TileBuffer.hpp"
 
 #include "imgui.h"
 
@@ -95,6 +96,7 @@ class Canvas {
 			} select;
 		} tools;
 
+		TileBuffer tile_tmp_buffer;
 
 		static size_t unique_identifier;
 		static constexpr int WIDTH = 512;
