@@ -186,6 +186,15 @@ void Canvas::renderPaste(SDL_Renderer *renderer) {
 	SDL_RenderFillRect(renderer, &dst);
 }
 
+void Canvas::renderToolRect(SDL_Renderer *renderer) {
+	SDL_Rect dst = {
+		tools.rect.start_x,
+		tools.rect.start_y,
+		tools.rect.end_x - tools.rect.start_x,
+		tools.rect.end_y - tools.rect.start_y,
+	};
+}
+
 void Canvas::drawCanvasWindow(void) {
 	ImVec2 area_available;
 	focused = false;
@@ -516,6 +525,36 @@ void Canvas::handleToolPaste(void) {
 		undo_system.endAction(rom.viewer);
 
 		setTool(old_tool);
+	}
+}
+
+void Canvas::handleToolRect(void) {
+	ImVec2 normal_pos = getNormalPositionOnCanvas();
+
+	int x = normal_pos.x * TileViewer::WIDTH;
+	int y = normal_pos.y * TileViewer::HEIGHT;
+
+	/*
+	x += offset_tiles_x * TileViewer::TILE_SIZE;
+	y += offset_tiles_y * TileViewer::TILE_SIZE;
+	*/
+
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+		tools.rect.start_x = x;
+		tools.rect.start_y = y;
+	}
+
+	if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+		tools.rect.end_x = x;
+		tools.rect.end_y = y;
+	}
+
+	if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+		int start_x, start_y, end_x, end_y;
+
+		for(int j = 0; j < 10; j++) {
+
+		}
 	}
 }
 
