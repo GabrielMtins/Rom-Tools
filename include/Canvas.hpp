@@ -9,13 +9,15 @@
 #include "imgui.h"
 
 #define FOR_TOOL_LIST(DO) \
-	DO(TOOL_BRUSH, handleToolBrush) \
-	DO(TOOL_SELECT, handleToolSelect) \
-	DO(TOOL_BUCKET, handleToolBucket)
+	DO(TOOL_BRUSH, handleToolBrush, ImGuiKey_B) \
+	DO(TOOL_SELECT, handleToolSelect, ImGuiKey_V) \
+	DO(TOOL_BUCKET, handleToolBucket, ImGuiKey_F) \
+	DO(TOOL_INVERT_HORIZONTAL, handleInvertHTool, ImGuiKey_H) \
+	DO(TOOL_INVERT_VERTICAL, handleInvertVTool, ImGuiKey_R)
 
 class Canvas {
 	public:
-		#define EXPAND_AS_ENUM(type, function) type,
+		#define EXPAND_AS_ENUM(type, function, key) type,
 
 		enum Tool {
 			FOR_TOOL_LIST(EXPAND_AS_ENUM)
@@ -50,6 +52,9 @@ class Canvas {
 		void handleToolBrush(void);
 		void handleToolSelect(void);
 		void handleToolBucket(void);
+		void handleInvertHTool(void);
+		void handleInvertVTool(void);
+		void handleInvertTool(bool horizontal=true);
 
 		ImVec2 getNormalPositionOnCanvas(void) const;
 

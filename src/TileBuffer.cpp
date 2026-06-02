@@ -1,5 +1,13 @@
 #include "TileBuffer.hpp"
 
+void TileBuffer::invert(bool horizontal) {
+	if(horizontal) {
+		invertHorizontal();
+	} else {
+		invertVertical();
+	}
+}
+
 void TileBuffer::invertHorizontal(void) {
 	if(width * height == 0) {
 		return;
@@ -36,6 +44,24 @@ void TileBuffer::invertVertical(void) {
 					);
 		}
 	}
+}
+
+void TileBuffer::appendData(const Rom_Viewer& viewer, size_t tile_id) {
+	raw_data.emplace_back();
+	auto& raw_tile = raw_data.back();
+
+	for(int j = 0; j < 8; j++) {
+		for(int i = 0; i < 8; i++) {
+			raw_tile.at(i + j * 8) = Rom_GetTilePixelColor(
+					&viewer,
+					tile_id,
+					i,
+					j
+					);
+		}
+	}
+
+	width++;
 }
 
 void TileBuffer::invertTile(TileRawData& data, bool horizontal) {

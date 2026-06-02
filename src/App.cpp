@@ -170,17 +170,11 @@ void App::renderCanvasList(void) {
 }
 
 void App::handleInput(void) {
-	if(ImGui::IsKeyPressed(ImGuiKey_B)) {
-		tool = Canvas::TOOL_BRUSH;
-	}
+	#define EXPAND_AS_INPUT(type, function, key) if(ImGui::IsKeyPressed(key)) tool = Canvas::type;
 
-	if(ImGui::IsKeyPressed(ImGuiKey_V)) {
-		tool = Canvas::TOOL_SELECT;
-	}
+	FOR_TOOL_LIST(EXPAND_AS_INPUT);
 
-	if(ImGui::IsKeyPressed(ImGuiKey_F)) {
-		tool = Canvas::TOOL_BUCKET;
-	}
+	#undef EXPAND_AS_INPUT
 }
 
 void App::beginRender(void) {

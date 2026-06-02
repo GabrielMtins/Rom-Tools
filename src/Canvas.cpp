@@ -278,7 +278,7 @@ void Canvas::handleClickImage(void) {
 		return;
 	}
 
-	#define EXPAND_AS_CASE(type, function) case type: function(); break;
+	#define EXPAND_AS_CASE(type, function, key) case type: function(); break;
 
 	switch(tool) {
 		FOR_TOOL_LIST(EXPAND_AS_CASE)
@@ -342,6 +342,8 @@ void Canvas::handleToolBucket(void) {
 		undo_system.beginAction();
 		floodVisible(selected_color, true);
 		undo_system.endAction();
+
+		return;
 	}
 
 	ImVec2 normal_pos = getNormalPositionOnCanvas();
@@ -351,6 +353,71 @@ void Canvas::handleToolBucket(void) {
 
 	undo_system.beginAction();
 	floodFill(start_x, start_y, selected_color, true);
+	undo_system.endAction();
+}
+
+void Canvas::handleInvertHTool(void) {
+	handleInvertTool(true);
+}
+
+void Canvas::handleInvertVTool(void) {
+	handleInvertTool(false);
+}
+
+void Canvas::handleInvertTool(bool horizontal) {
+	if(!ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+		return;
+	}
+
+	SDL_Rect rect = tools.select.rect;
+
+	if(!tools.select.selected) {
+		ImVec2 normal_pos = getNormalPositionOnCanvas();
+
+		int x = floorf(normal_pos.x * (TileViewer::TILES_PER_ROW / zoom_level)) + offset_tiles_x;
+		int y = floorf(normal_pos.y * (TileViewer::TILES_PER_COLUMN / zoom_level)) + offset_tiles_y;
+
+		rect.x = x;
+		rect.y = y;
+		rect.w = 1;
+		rect.h = 1;
+	}
+
+	tile_tmp_buffer.reset();
+
+	for(int j = 0; j < rect.h; j++) {
+		for(int i = 0; i < rect.w; i++) {
+			tile_tmp_buffer.appendData(
+					rom.viewer,
+					(i + rect.x) + (j + rect.y) * TileViewer::TILES_PER_ROW
+					);
+		}
+	}
+
+	tile_tmp_buffer.width = rect.w;
+	tile_tmp_buffer.height = rect.h;
+
+	tile_tmp_buffer.invert(horizontal);
+
+	undo_system.beginAction();
+
+	for(size_t i = 0; i < tile_tmp_buffer.raw_data.size(); i++) {
+		int tile_id = (i % tile_tmp_buffer.width + rect.x) +
+			(i / tile_tmp_buffer.width + rect.y) * TileViewer::TILES_PER_ROW;
+
+		undo_system.addTile(rom.viewer, tile_id);
+
+		for(int j = 0; j < 64; j++) {
+			Rom_SetTilePixelColor(
+					&rom.viewer,
+					tile_id,
+					j % 8,
+					j / 8,
+					tile_tmp_buffer.raw_data.at(i).at(j)
+					);
+		}
+	} 
+
 	undo_system.endAction();
 }
 
