@@ -12,18 +12,6 @@ void UndoSystem::beginAction(void) {
 		return;
 	}
 
-	if(next_undo_stack != 0) {
-		if(history.num_actions != 0) {
-			old_tiles.resize(old_tiles.size() - history.num_tiles);
-			undo_stack.resize(undo_stack.size() - history.num_actions);
-	
-			history.num_actions = 0;
-			history.num_tiles = 0;
-		}
-	}
-
-	next_undo_stack = 0;
-
 	action = true;
 }
 
@@ -51,11 +39,17 @@ void UndoSystem::endAction(const Rom_Viewer& viewer) {
 				tile.new_data
 				);
 	}
+
+	next_undo_stack = 0;
 }
 
 void UndoSystem::addTile(const Rom_Viewer& viewer, size_t tile_index) {
 	if(isTileOnStack(tile_index)) {
 		return;
+	}
+
+	if(next_undo_stack == 0) {
+		cleanActions();
 	}
 
 	UndoTile undo_tile;
@@ -110,8 +104,6 @@ void UndoSystem::redoAction(Rom_Viewer& viewer) {
 				viewer,
 				*(old_tiles.rbegin() + history.num_tiles)
 				);
-
-		//old_tiles.pop_back();
 	}
 
 }
@@ -182,7 +174,7 @@ void UndoSystem::cleanToFitMaxSize(void) {
 		actions_to_remove++;
 	}
 
-	if(actions_to_remove != 0) {
+	if(actions_to_remove > 0) {
 		old_tiles.erase(
 				old_tiles.begin(),
 				old_tiles.begin() + tiles_to_remove
@@ -192,5 +184,23 @@ void UndoSystem::cleanToFitMaxSize(void) {
 				undo_stack.begin(),
 				undo_stack.begin() + actions_to_remove
 				);
+
+		if(history.num_actions >= actions_to_remove) {
+			history.num_actions -= actions_to_remove;
+			history.num_tiles -= tiles_to_remove;
+		} else {
+			history.num_actions = 0;
+			history.num_tiles = 0;
+		}
+	}
+}
+
+void UndoSystem::cleanActions(void) {
+	if(history.num_actions > 0) {
+		old_tiles.resize(old_tiles.size() - history.num_tiles);
+		undo_stack.resize(undo_stack.size() - history.num_actions);
+	
+		history.num_actions = 0;
+		history.num_tiles = 0;
 	}
 }

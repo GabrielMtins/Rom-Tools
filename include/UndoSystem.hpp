@@ -33,6 +33,7 @@ class UndoSystem {
 		void copyFromViewer(const Rom_Viewer& viewer, size_t tile_index, TileRawData& data) const;
 		void copyToViewer(Rom_Viewer& viewer, size_t tile_index, const TileRawData& data) const;
 		void cleanToFitMaxSize(void);
+		void cleanActions(void);
 
 		std::vector<UndoTile> old_tiles;
 		std::vector<size_t> undo_stack;
