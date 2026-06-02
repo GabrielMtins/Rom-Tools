@@ -49,6 +49,44 @@ void TileViewer::draw(const Rom_Viewer& viewer, const Palette& palette, int offs
 	SDL_UnlockTexture(texture);
 }
 
+void TileViewer::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
+	uint32_t *pixels;
+	int pitch;
+
+	SDL_LockTexture(texture, NULL, (void **) &pixels, &pitch);
+
+	pitch /= 4;
+
+	int dx = std::abs(x2 - x1);
+	int dy = std::abs(y2 - y1);
+
+	int sx = (x1 < x2) ? 1 : -1;
+	int sy = (y1 < y2) ? 1 : -1;
+
+	int err = dx - dy;
+	int x = x1, y = y1;
+
+	while(1) {
+		pixels[x + y * pitch] = color;
+
+		if(x == x2 && y == y2) break;
+
+		int new_err = 2 * err;
+
+		if(new_err > -dy) {
+			err -= dy;
+			x += sx;
+		}
+
+		if(new_err < dx) {
+			err += dx;
+			y += sy;
+		}
+	}
+
+	SDL_UnlockTexture(texture);
+}
+
 void TileViewer::drawBuffer(const TileBuffer& buffer, const Palette& palette) {
 	uint32_t *pixels;
 	int pitch;

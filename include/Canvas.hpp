@@ -14,7 +14,8 @@
 	DO(TOOL_BUCKET, handleToolBucket, ImGuiKey_F) \
 	DO(TOOL_INVERT, handleToolInvert, ImGuiKey_T) \
 	DO(TOOL_PASTE, handleToolPaste, ImGuiKey_P) \
-	DO(TOOL_RECT, handleToolRect, ImGuiKey_R)
+	DO(TOOL_RECT, handleToolRect, ImGuiKey_R) \
+	DO(TOOL_LINE, handleToolLine, ImGuiKey_G)
 
 class Canvas {
 	public:
@@ -47,6 +48,7 @@ class Canvas {
 		void renderLines(SDL_Renderer *renderer);
 		void renderPaste(SDL_Renderer *renderer);
 		void renderToolRect(SDL_Renderer *renderer);
+		void renderToolLine(TileViewer &tile_viewer);
 
 		void drawCanvasWindow(void);
 		SDL_Rect computeSrcRect(void) const;
@@ -60,6 +62,7 @@ class Canvas {
 		void handleToolInvert(void);
 		void handleToolPaste(void);
 		void handleToolRect(void);
+		void handleToolLine(void);
 
 		ImVec2 getNormalPositionOnCanvas(void) const;
 		ImVec2 getIntegerPositionOnViewer(void) const;
@@ -121,6 +124,12 @@ class Canvas {
 				int end_x, end_y;
 				bool selected = false;
 			} rect;
+
+			struct {
+				int start_x, start_y;
+				int end_x, end_y;
+				bool active = false;
+			} line;
 		} tools;
 
 		TileBuffer tile_tmp_buffer;

@@ -16,6 +16,7 @@ class TileViewer {
 	public:
 		static std::unique_ptr<TileViewer> create(SDL_Renderer *renderer);
 		void draw(const Rom_Viewer& viewer, const Palette& palette, int offset_tiles_y);
+		void drawLine(int x1, int y1, int x2, int y2, uint32_t color);
 		void drawBuffer(const TileBuffer& buffer, const Palette& palette);
 		SDL_Texture * getTexture(void);
 

@@ -75,6 +75,8 @@ void Canvas::renderToTexture(SDL_Renderer *renderer, TileViewer& tile_viewer) {
 			offset_tiles_y
 			);
 
+	renderToolLine(tile_viewer);
+
 	SDL_SetRenderTarget(renderer, texture);
 
 	src = computeSrcRect();
@@ -210,6 +212,20 @@ void Canvas::renderToolRect(SDL_Renderer *renderer) {
 
 	SDL_SetRenderDrawColor(renderer, r, g, b, 0xff);
 	SDL_RenderFillRect(renderer, &dst);
+}
+
+void Canvas::renderToolLine(TileViewer& tile_viewer) {
+	if(!tools.line.active) {
+		return;
+	}
+
+	tile_viewer.drawLine(
+			tools.line.start_x,
+			tools.line.start_y - offset_tiles_y * TileViewer::TILE_SIZE,
+			tools.line.end_x,
+			tools.line.end_y - offset_tiles_y * TileViewer::TILE_SIZE,
+			rom.palette.at(selected_color)
+			);
 }
 
 void Canvas::drawCanvasWindow(void) {
@@ -582,6 +598,35 @@ void Canvas::handleToolRect(void) {
 		undo_system.endAction(rom.viewer);
 
 		tools.rect.selected = false;
+	}
+}
+
+void Canvas::handleToolLine(void) {
+	ImVec2 pos = getIntegerPositionOnViewer();
+
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+		tools.line.start_x = pos.x;
+		tools.line.start_y = pos.y;
+		tools.line.active = true;
+	}
+
+	tools.line.end_x = pos.x;
+	tools.line.end_y = pos.y;
+
+	if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+		tools.line.active = false;
+
+		undo_system.beginAction();
+
+		bresenhamLine(
+				tools.line.start_x,
+				tools.line.start_y,
+				tools.line.end_x,
+				tools.line.end_y,
+				selected_color
+				);
+
+		undo_system.endAction(rom.viewer);
 	}
 }
 
