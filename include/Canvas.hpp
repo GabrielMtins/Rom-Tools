@@ -62,6 +62,8 @@ class Canvas {
 		void handleToolRect(void);
 
 		ImVec2 getNormalPositionOnCanvas(void) const;
+		ImVec2 getIntegerPositionOnViewer(void) const;
+		ImVec2 getTilePositionOnViewer(void) const;
 
 		void increaseZoom(void);
 		void decreaseZoom(void);
@@ -71,17 +73,15 @@ class Canvas {
 		int getTileSizeZoomed(void) const;
 		bool isTileInsideSelection(size_t tile_id) const;
 
-		/* x is between 0 and TileViewer::WIDTH 
-		 * y is between 0 and TileViewer::HEIGHT */
+		/* Os parâmetros das funções abaixos PRECISAM estar em coordenadas do TileViewer. */
 		bool putPixel(int x, int y, int selected_color, bool check_for_selection = false);
 		void bresenhamLine(int x1, int y1, int x2, int y2, int selected_color, bool check_for_selection=false);
 		void floodVisible(int selected_color, bool check_for_selection=false);
 		void floodFill(int start_x, int start_y, int selected_color, bool check_for_selection=false);
 		int getPixel(int x, int y) const;
-
+		bool isPixelInsideCanvasView(int x, int y) const;
 		void copyFromViewerToBuffer(int x, int y, int w, int h, TileBuffer& buffer) const;
 		void copyFromBufferToViewer(int x, int y, const TileBuffer& buffer);
-
 		PixelTile convertToPixelTile(int x, int y) const;
 
 		RomData rom;
@@ -106,8 +106,8 @@ class Canvas {
 			} brush;
 
 			struct {
-				SDL_Rect rect = {0, 0, 0, 0};
-				int start_x, start_y, end_x, end_y;
+				SDL_Rect tile_rect = {0, 0, 0, 0};
+				int tile_start_x, tile_start_y, tile_end_x, tile_end_y;
 				bool selected = false;
 			} select;
 
@@ -116,8 +116,10 @@ class Canvas {
 			} paste;
 
 			struct {
+				SDL_Rect px_rect;
 				int start_x, start_y;
 				int end_x, end_y;
+				bool selected = false;
 			} rect;
 		} tools;
 
@@ -132,6 +134,8 @@ class Canvas {
 
 		static constexpr int WIDTH = 512;
 		static constexpr int HEIGHT = 512;
+
+		static constexpr int canvas_view_ratio = WIDTH / TileViewer::WIDTH;
 };
 
 #endif
