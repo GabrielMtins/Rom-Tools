@@ -12,7 +12,8 @@
 	DO(TOOL_BRUSH, handleToolBrush, ImGuiKey_B) \
 	DO(TOOL_SELECT, handleToolSelect, ImGuiKey_V) \
 	DO(TOOL_BUCKET, handleToolBucket, ImGuiKey_F) \
-	DO(TOOL_INVERT, handleInvertTool, ImGuiKey_R)
+	DO(TOOL_INVERT, handleToolInvert, ImGuiKey_T) \
+	DO(TOOL_PASTE, handleToolPaste, ImGuiKey_P)
 
 class Canvas {
 	public:
@@ -26,10 +27,9 @@ class Canvas {
 
 		static std::unique_ptr<Canvas> create(SDL_Renderer *renderer, const std::string& rom_path);
 		void draw(SDL_Renderer *renderer, TileViewer& tile_viewer);
-		void setTool(Tool tool);
-		void accessGlobalBuffer(TileBuffer& tile_copy_buffer);
+		static void setTool(Tool new_tool);
+		static Tool getTool(void);
 
-		bool isAskingForGlobalBufferAccess(void) const;
 		bool isOpen(void) const;
 
 		~Canvas(void);
@@ -44,6 +44,7 @@ class Canvas {
 		void renderToTexture(SDL_Renderer *renderer, TileViewer& tile_viewer);
 		void renderSelectRect(SDL_Renderer *renderer);
 		void renderLines(SDL_Renderer *renderer);
+		void renderPaste(SDL_Renderer *renderer);
 
 		void drawCanvasWindow(void);
 		SDL_Rect computeSrcRect(void) const;
@@ -55,7 +56,8 @@ class Canvas {
 		void handleToolSelect(void);
 		void handleToolBucket(void);
 		void handleInvertHTool(void);
-		void handleInvertTool(void);
+		void handleToolInvert(void);
+		void handleToolPaste(void);
 
 		ImVec2 getNormalPositionOnCanvas(void) const;
 
@@ -75,6 +77,9 @@ class Canvas {
 		void floodFill(int start_x, int start_y, int selected_color, bool check_for_selection=false);
 		int getPixel(int x, int y) const;
 
+		void copyFromViewerToBuffer(int x, int y, int w, int h, TileBuffer& buffer) const;
+		void copyFromBufferToViewer(int x, int y, const TileBuffer& buffer);
+
 		PixelTile convertToPixelTile(int x, int y) const;
 
 		RomData rom;
@@ -93,8 +98,6 @@ class Canvas {
 
 		SDL_Texture *texture = NULL;
 
-		Tool tool = TOOL_SELECT;
-
 		struct {
 			struct {
 				int old_x, old_y;
@@ -105,12 +108,21 @@ class Canvas {
 				int start_x, start_y, end_x, end_y;
 				bool selected = false;
 			} select;
+
+			struct {
+				int x, y;
+			} paste;
 		} tools;
 
 		TileBuffer tile_tmp_buffer;
-		bool ask_for_global_buffer_access = false;
 
 		static size_t unique_identifier;
+		static TileBuffer tile_copy_buffer;
+		static std::unique_ptr<TileViewer> viewer_copy;
+
+		static Tool tool;
+		static Tool old_tool;
+
 		static constexpr int WIDTH = 512;
 		static constexpr int HEIGHT = 512;
 };

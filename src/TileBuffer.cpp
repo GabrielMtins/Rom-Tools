@@ -46,6 +46,10 @@ void TileBuffer::invertVertical(void) {
 	}
 }
 
+bool TileBuffer::isValid(void) const {
+	return (width * height) != 0 && (width * height == raw_data.size());
+}
+
 void TileBuffer::appendData(const Rom_Viewer& viewer, size_t tile_id) {
 	raw_data.emplace_back();
 	auto& raw_tile = raw_data.back();

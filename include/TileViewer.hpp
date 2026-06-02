@@ -10,10 +10,13 @@
 #include "Palette.hpp"
 #include "RomData.hpp"
 
+#include "TileBuffer.hpp"
+
 class TileViewer {
 	public:
 		static std::unique_ptr<TileViewer> create(SDL_Renderer *renderer);
 		void draw(const Rom_Viewer& viewer, const Palette& palette, int offset_tiles_y);
+		void drawBuffer(const TileBuffer& buffer, const Palette& palette);
 		SDL_Texture * getTexture(void);
 
 		~TileViewer(void);

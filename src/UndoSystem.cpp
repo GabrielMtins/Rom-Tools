@@ -44,6 +44,10 @@ void UndoSystem::endAction(const Rom_Viewer& viewer) {
 }
 
 void UndoSystem::addTile(const Rom_Viewer& viewer, size_t tile_index) {
+	if(!action) {
+		return;
+	}
+
 	if(isTileOnStack(tile_index)) {
 		return;
 	}

@@ -49,6 +49,29 @@ void TileViewer::draw(const Rom_Viewer& viewer, const Palette& palette, int offs
 	SDL_UnlockTexture(texture);
 }
 
+void TileViewer::drawBuffer(const TileBuffer& buffer, const Palette& palette) {
+	uint32_t *pixels;
+	int pitch;
+
+	SDL_LockTexture(texture, NULL, (void **) &pixels, &pitch);
+
+	pitch /= 4;
+
+	for(size_t j = 0; j < buffer.height * TILE_SIZE; j++) {
+		for(size_t i = 0; i < buffer.width * TILE_SIZE; i++) {
+			int color_id = buffer.raw_data.at(
+					(i / TILE_SIZE) + (j / TILE_SIZE) * buffer.width
+					).at(
+						(i % TILE_SIZE) + (j % TILE_SIZE) * TILE_SIZE
+						);
+
+			pixels[(i) + (j) * pitch] = palette.at(color_id);
+		}
+	}
+
+	SDL_UnlockTexture(texture);
+}
+
 SDL_Texture * TileViewer::getTexture(void) {
 	return texture;
 }

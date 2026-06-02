@@ -34,8 +34,6 @@ class App {
 		std::vector<std::unique_ptr<Canvas>> canvas_list;
 
 		TileBuffer tile_copy_buffer;
-
-		Canvas::Tool tool = Canvas::TOOL_BRUSH;
 };
 
 #endif

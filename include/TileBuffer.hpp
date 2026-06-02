@@ -23,6 +23,7 @@ struct TileBuffer {
 	void invert(bool horizontal=true);
 	void invertHorizontal(void);
 	void invertVertical(void);
+	bool isValid(void) const;
 
 	void appendData(const Rom_Viewer& viewer, size_t tile_id);
 

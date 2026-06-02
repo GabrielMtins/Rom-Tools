@@ -5,6 +5,10 @@
 #define MAX_ZOOM_LEVEL 16
 
 size_t Canvas::unique_identifier = 0;
+TileBuffer Canvas::tile_copy_buffer;
+std::unique_ptr<TileViewer> Canvas::viewer_copy = nullptr;
+Canvas::Tool Canvas::tool = Canvas::TOOL_SELECT;
+Canvas::Tool Canvas::old_tool = Canvas::TOOL_SELECT;
 
 std::unique_ptr<Canvas> Canvas::create(SDL_Renderer *renderer, const std::string& rom_path) {
 	auto canvas = std::make_unique<Canvas>();
@@ -29,6 +33,10 @@ std::unique_ptr<Canvas> Canvas::create(SDL_Renderer *renderer, const std::string
 
 	canvas->rom.setViewerFormat(ROM_TYPE_NES);
 
+	if(viewer_copy == nullptr) {
+		viewer_copy = TileViewer::create(renderer);
+	}
+
 	return canvas;
 }
 
@@ -40,20 +48,20 @@ void Canvas::draw(SDL_Renderer *renderer, TileViewer& tile_viewer) {
 	drawCanvasWindow();
 }
 
-void Canvas::setTool(Canvas::Tool tool) {
-	this->tool = tool;
+void Canvas::setTool(Tool new_tool) {
+	if(new_tool != tool) {
+		old_tool = tool;
+	}
+
+	tool = new_tool;
 }
 
-void Canvas::accessGlobalBuffer(TileBuffer& tile_copy_buffer) {
-	// TODO
+Canvas::Tool Canvas::getTool(void) {
+	return tool;
 }
 
 bool Canvas::isOpen(void) const {
 	return open;
-}
-
-bool Canvas::isAskingForGlobalBufferAccess(void) const {
-	return ask_for_global_buffer_access;
 }
 
 void Canvas::renderToTexture(SDL_Renderer *renderer, TileViewer& tile_viewer) {
@@ -71,6 +79,7 @@ void Canvas::renderToTexture(SDL_Renderer *renderer, TileViewer& tile_viewer) {
 
 	SDL_RenderCopy(renderer, tile_viewer.getTexture(), &src, NULL);
 
+	renderPaste(renderer);
 	renderLines(renderer);
 	renderSelectRect(renderer);
 
@@ -82,18 +91,29 @@ void Canvas::renderSelectRect(SDL_Renderer *renderer) {
 		return;
 	}
 
-	SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0x88);
 	int tile_size = getTileSizeZoomed();
 
-	SDL_Rect select_rect_transformed = {
+	SDL_Rect rect = {
 		(tools.select.rect.x - offset_tiles_x) * tile_size,
 		(tools.select.rect.y - offset_tiles_y) * tile_size,
 		(tools.select.rect.w) * tile_size,
 		(tools.select.rect.h) * tile_size,
 	};
 
+	SDL_Rect masks[4] = {
+		{0, 0, WIDTH, rect.y - zoom_level},
+		{0, rect.y + rect.h, WIDTH, HEIGHT - (rect.y + rect.h) + zoom_level},
+		{0, rect.y - zoom_level, rect.x - zoom_level, rect.h + zoom_level},
+		{rect.x + rect.w, rect.y - zoom_level, WIDTH - (rect.x + rect.w), rect.h + zoom_level},
+	};
 
-	SDL_RenderFillRect(renderer, &select_rect_transformed);
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 160);
+
+	for(int i = 0; i < 4; i++) {
+		SDL_RenderFillRect(renderer, &masks[i]);
+	}
+
+	//SDL_RenderFillRect(renderer, &select_rect_transformed);
 }
 
 void Canvas::renderLines(SDL_Renderer *renderer) {
@@ -132,6 +152,38 @@ void Canvas::renderLines(SDL_Renderer *renderer) {
 				&rect
 				);
 	}
+}
+
+void Canvas::renderPaste(SDL_Renderer *renderer) {
+	if(tool != TOOL_PASTE) {
+		return;
+	}
+
+	viewer_copy->drawBuffer(tile_copy_buffer, rom.palette);
+	int tile_size = getTileSizeZoomed();
+
+	SDL_Rect src = {
+		0, 0,
+		int(tile_copy_buffer.width) * TileViewer::TILE_SIZE,
+		int(tile_copy_buffer.height) * TileViewer::TILE_SIZE
+	};
+
+	SDL_Rect dst = {
+		(tools.paste.x - offset_tiles_x) * tile_size,
+		(tools.paste.y - offset_tiles_y) * tile_size,
+		int(tile_copy_buffer.width) * tile_size,
+		int(tile_copy_buffer.height) * tile_size,
+	};
+
+	SDL_RenderCopy(
+			renderer,
+			viewer_copy->getTexture(),
+			&src,
+			&dst
+			);
+
+	SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0x80);
+	SDL_RenderFillRect(renderer, &dst);
 }
 
 void Canvas::drawCanvasWindow(void) {
@@ -261,6 +313,24 @@ void Canvas::handleInput(void) {
 		undo_system.redoAction(rom.viewer);
 	}
 
+	if(ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_C)) {
+		if(tools.select.selected) {
+			copyFromViewerToBuffer(
+					tools.select.rect.x,
+					tools.select.rect.y,
+					tools.select.rect.w,
+					tools.select.rect.h,
+					tile_copy_buffer
+					);
+
+			tools.select.selected = false;
+		}
+	}
+
+	if(ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_V)) {
+		setTool(TOOL_PASTE);
+	}
+
 	offset_tiles_x += int(-ImGui::GetIO().MouseWheelH);
 
 	if(ImGui::IsKeyPressed(ImGuiKey_1)) {
@@ -384,7 +454,7 @@ void Canvas::handleToolBucket(void) {
 	undo_system.endAction(rom.viewer);
 }
 
-void Canvas::handleInvertTool(void) {
+void Canvas::handleToolInvert(void) {
 	if(!ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
 		return;
 	}
@@ -405,42 +475,40 @@ void Canvas::handleInvertTool(void) {
 		rect.h = 1;
 	}
 
-	tile_tmp_buffer.reset();
-
-	for(int j = 0; j < rect.h; j++) {
-		for(int i = 0; i < rect.w; i++) {
-			tile_tmp_buffer.appendData(
-					rom.viewer,
-					(i + rect.x) + (j + rect.y) * TileViewer::TILES_PER_ROW
-					);
-		}
-	}
-
-	tile_tmp_buffer.width = rect.w;
-	tile_tmp_buffer.height = rect.h;
+	copyFromViewerToBuffer(rect.x, rect.y, rect.w, rect.h, tile_tmp_buffer);
 
 	tile_tmp_buffer.invert(horizontal);
 
 	undo_system.beginAction();
 
-	for(size_t i = 0; i < tile_tmp_buffer.raw_data.size(); i++) {
-		int tile_id = (i % tile_tmp_buffer.width + rect.x) +
-			(i / tile_tmp_buffer.width + rect.y) * TileViewer::TILES_PER_ROW;
-
-		undo_system.addTile(rom.viewer, tile_id);
-
-		for(int j = 0; j < 64; j++) {
-			Rom_SetTilePixelColor(
-					&rom.viewer,
-					tile_id,
-					j % 8,
-					j / 8,
-					tile_tmp_buffer.raw_data.at(i).at(j)
-					);
-		}
-	} 
+	copyFromBufferToViewer(rect.x, rect.y, tile_tmp_buffer);
 
 	undo_system.endAction(rom.viewer);
+}
+
+void Canvas::handleToolPaste(void) {
+	if(ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+		setTool(old_tool);
+		return;
+	}
+
+	ImVec2 normal_pos = getNormalPositionOnCanvas();
+
+	int x = floorf(normal_pos.x * (TileViewer::TILES_PER_ROW / zoom_level)) + offset_tiles_x;
+	int y = floorf(normal_pos.y * (TileViewer::TILES_PER_COLUMN / zoom_level)) + offset_tiles_y;
+	
+	tools.paste.x = x;
+	tools.paste.y = y;
+
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+		undo_system.beginAction();
+
+		copyFromBufferToViewer(x, y, tile_copy_buffer);
+
+		undo_system.endAction(rom.viewer);
+
+		setTool(old_tool);
+	}
 }
 
 void Canvas::floodVisible(int selected_color, bool check_for_selection) {
@@ -616,6 +684,53 @@ int Canvas::getPixel(int x, int y) const {
 			px.x,
 			px.y
 			);
+}
+
+void Canvas::copyFromViewerToBuffer(int x, int y, int w, int h, TileBuffer& buffer) const {
+	buffer.reset();
+
+	for(int j = 0; j < h; j++) {
+		for(int i = 0; i < w; i++) {
+			buffer.appendData(
+					rom.viewer,
+					(i + x) + (j + y) * TileViewer::TILES_PER_ROW
+					);
+		}
+	}
+
+	buffer.width = w;
+	buffer.height = h;
+}
+
+void Canvas::copyFromBufferToViewer(int x, int y, const TileBuffer& buffer) {
+	size_t i = 0, j = 0;
+
+	for(const auto& tile : buffer.raw_data) {
+		if(i >= buffer.width) {
+			i = 0;
+			j++;
+		}
+
+		if(i + x >= TileViewer::TILES_PER_ROW) {
+			i++;
+			continue;
+		}
+
+		int tile_id = (i + x) + (j + y) * TileViewer::TILES_PER_ROW;
+		undo_system.addTile(rom.viewer, tile_id);
+
+		for(int k = 0; k < 64; k++) {
+			Rom_SetTilePixelColor(
+					&rom.viewer,
+					tile_id,
+					k % 8,
+					k / 8,
+					tile.at(k)
+					);
+		}
+
+		i++;
+	}
 }
 
 Canvas::PixelTile Canvas::convertToPixelTile(int x, int y) const {

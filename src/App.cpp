@@ -153,7 +153,6 @@ void App::renderToolbar(void) {
 
 void App::renderCanvasList(void) {
 	for(auto& canvas : canvas_list) {
-		canvas->setTool(tool);
 		canvas->draw(renderer, *tile_viewer);
 	}
 
@@ -170,7 +169,7 @@ void App::renderCanvasList(void) {
 }
 
 void App::handleInput(void) {
-	#define EXPAND_AS_INPUT(type, function, key) if(ImGui::IsKeyPressed(key)) tool = Canvas::type;
+	#define EXPAND_AS_INPUT(type, function, key) if(ImGui::IsKeyPressed(key) && !ImGui::IsKeyDown(ImGuiKey_LeftCtrl)) Canvas::setTool(Canvas::type);
 
 	FOR_TOOL_LIST(EXPAND_AS_INPUT);
 
