@@ -12,10 +12,22 @@ void UndoSystem::beginAction(void) {
 		return;
 	}
 
+	if(next_undo_stack != 0) {
+		if(history.num_actions != 0) {
+			old_tiles.resize(old_tiles.size() - history.num_tiles);
+			undo_stack.resize(undo_stack.size() - history.num_actions);
+	
+			history.num_actions = 0;
+			history.num_tiles = 0;
+		}
+	}
+
+	next_undo_stack = 0;
+
 	action = true;
 }
 
-void UndoSystem::endAction(void) {
+void UndoSystem::endAction(const Rom_Viewer& viewer) {
 	if(!action) {
 		return;
 	}
@@ -29,7 +41,16 @@ void UndoSystem::endAction(void) {
 	cleanToFitMaxSize();
 
 	undo_stack.push_back(next_undo_stack);
-	next_undo_stack = 0;
+
+	for(size_t i = 0; i < next_undo_stack; i++) {
+		UndoTile& tile = old_tiles.at(old_tiles.size() - 1 - i);
+
+		copyFromViewer(
+				viewer,
+				tile.tile_index,
+				tile.new_data
+				);
+	}
 }
 
 void UndoSystem::addTile(const Rom_Viewer& viewer, size_t tile_index) {
@@ -41,7 +62,7 @@ void UndoSystem::addTile(const Rom_Viewer& viewer, size_t tile_index) {
 
 	for(int j = 0; j < 8; j++) {
 		for(int i = 0; i < 8; i++) {
-			undo_tile.tile.at(i + j * 8) = Rom_GetTilePixelColor(&viewer, tile_index, i, j);
+			undo_tile.old_data.at(i + j * 8) = Rom_GetTilePixelColor(&viewer, tile_index, i, j);
 		}
 	}
 
@@ -52,22 +73,47 @@ void UndoSystem::addTile(const Rom_Viewer& viewer, size_t tile_index) {
 }
 
 void UndoSystem::undoAction(Rom_Viewer& viewer) {
-	if(undo_stack.empty()) {
+	if(undo_stack.size() == history.num_actions) {
 		return;
 	}
 
-	size_t num_tiles_undo = undo_stack.back();
+	size_t num_tiles_undo = *(undo_stack.rbegin() + history.num_actions);
 
 	for(size_t i = 0; i < num_tiles_undo; i++) {
 		undoTile(
 				viewer,
-				old_tiles.back()
+				*(old_tiles.rbegin() + history.num_tiles)
 				);
 
-		old_tiles.pop_back();
+		history.num_tiles++;
+		//old_tiles.pop_back();
 	}
 
-	undo_stack.pop_back();
+	history.num_actions++;
+
+	//undo_stack.pop_back();
+}
+
+void UndoSystem::redoAction(Rom_Viewer& viewer) {
+	if(history.num_actions == 0) {
+		return;
+	}
+
+	history.num_actions--;
+
+	size_t num_tiles_undo = *(undo_stack.rbegin() + history.num_actions);
+
+	for(size_t i = 0; i < num_tiles_undo; i++) {
+		history.num_tiles--;
+
+		redoTile(
+				viewer,
+				*(old_tiles.rbegin() + history.num_tiles)
+				);
+
+		//old_tiles.pop_back();
+	}
+
 }
 
 bool UndoSystem::isTileOnStack(size_t tile_index) const {
@@ -85,14 +131,35 @@ bool UndoSystem::isTileOnStack(size_t tile_index) const {
 }
 
 void UndoSystem::undoTile(Rom_Viewer& viewer, const UndoTile& tile) {
+	copyToViewer(viewer, tile.tile_index, tile.old_data);
+}
+
+void UndoSystem::redoTile(Rom_Viewer& viewer, const UndoTile& tile) {
+	copyToViewer(viewer, tile.tile_index, tile.new_data);
+}
+
+void UndoSystem::copyFromViewer(const Rom_Viewer& viewer, size_t tile_index, TileRawData& data) const {
+	for(int j = 0; j < 8; j++) {
+		for(int i = 0; i < 8; i++) {
+			data.at(i + j * 8) = Rom_GetTilePixelColor(
+					&viewer,
+					tile_index,
+					i,
+					j
+					);
+		}
+	}
+}
+
+void UndoSystem::copyToViewer(Rom_Viewer& viewer, size_t tile_index, const TileRawData& data) const {
 	for(int j = 0; j < 8; j++) {
 		for(int i = 0; i < 8; i++) {
 			Rom_SetTilePixelColor(
 					&viewer,
-					tile.tile_index,
+					tile_index,
 					i,
 					j,
-					tile.tile.at(i + j * 8)
+					data.at(i + j * 8)
 					);
 		}
 	}

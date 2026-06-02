@@ -257,6 +257,10 @@ void Canvas::handleInput(void) {
 		undo_system.undoAction(rom.viewer);
 	}
 
+	if(ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_Y)) {
+		undo_system.redoAction(rom.viewer);
+	}
+
 	offset_tiles_x += int(-ImGui::GetIO().MouseWheelH);
 
 	if(ImGui::IsKeyPressed(ImGuiKey_1)) {
@@ -306,7 +310,7 @@ void Canvas::handleToolBrush(void) {
 		undo_system.beginAction();
 		putPixel(x, y, selected_color, true);
 	} else {
-		undo_system.endAction();
+		undo_system.endAction(rom.viewer);
 	}
 }
 
@@ -349,7 +353,7 @@ void Canvas::handleToolBucket(void) {
 	if(fill_all) {
 		undo_system.beginAction();
 		floodVisible(selected_color, true);
-		undo_system.endAction();
+		undo_system.endAction(rom.viewer);
 
 		return;
 	}
@@ -361,7 +365,7 @@ void Canvas::handleToolBucket(void) {
 
 	undo_system.beginAction();
 	floodFill(start_x, start_y, selected_color, true);
-	undo_system.endAction();
+	undo_system.endAction(rom.viewer);
 }
 
 void Canvas::handleInvertTool(void) {
@@ -420,7 +424,7 @@ void Canvas::handleInvertTool(void) {
 		}
 	} 
 
-	undo_system.endAction();
+	undo_system.endAction(rom.viewer);
 }
 
 void Canvas::floodVisible(int selected_color, bool check_for_selection) {
@@ -539,6 +543,10 @@ bool Canvas::putPixel(int x, int y, int selected_color, bool check_for_selection
 		if(!isTileInsideSelection(px.tile_id)) {
 			return false;
 		}
+	}
+
+	if(Rom_GetTilePixelColor(&rom.viewer, px.tile_id, px.x, px.y) == selected_color) {
+		return false;
 	}
 
 	undo_system.addTile(rom.viewer, px.tile_id);
