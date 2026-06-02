@@ -10,6 +10,8 @@ std::unique_ptr<TileViewer> Canvas::viewer_copy = nullptr;
 Canvas::Tool Canvas::tool = Canvas::TOOL_SELECT;
 Canvas::Tool Canvas::old_tool = Canvas::TOOL_SELECT;
 
+#define sign(x) ((x) > 0 ? 1 : -1)
+
 std::unique_ptr<Canvas> Canvas::create(SDL_Renderer *renderer, const std::string& rom_path) {
 	auto canvas = std::make_unique<Canvas>();
 
@@ -112,8 +114,6 @@ void Canvas::renderSelectRect(SDL_Renderer *renderer) {
 	for(int i = 0; i < 4; i++) {
 		SDL_RenderFillRect(renderer, &masks[i]);
 	}
-
-	//SDL_RenderFillRect(renderer, &select_rect_transformed);
 }
 
 void Canvas::renderLines(SDL_Renderer *renderer) {
@@ -420,6 +420,14 @@ void Canvas::handleToolSelect(void) {
 
 	w = tools.select.end_x - tools.select.start_x;
 	h = tools.select.end_y - tools.select.start_y;
+
+	if(std::abs(w) >= TileViewer::TILES_PER_ROW) {
+		w = sign(w) * (TileViewer::TILES_PER_ROW - 1);
+	}
+
+	if(std::abs(h) >= TileViewer::TILES_PER_COLUMN) {
+		h = sign(h) * (TileViewer::TILES_PER_COLUMN - 1);
+	}
 
 	tools.select.rect = SDL_Rect{
 		((w >= 0) ? (tools.select.start_x) : (tools.select.end_x)),
