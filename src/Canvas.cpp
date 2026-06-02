@@ -356,18 +356,12 @@ void Canvas::handleToolBucket(void) {
 	undo_system.endAction();
 }
 
-void Canvas::handleInvertHTool(void) {
-	handleInvertTool(true);
-}
-
-void Canvas::handleInvertVTool(void) {
-	handleInvertTool(false);
-}
-
-void Canvas::handleInvertTool(bool horizontal) {
+void Canvas::handleInvertTool(void) {
 	if(!ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
 		return;
 	}
+
+	bool horizontal = !ImGui::IsKeyDown(ImGuiKey_LeftShift);
 
 	SDL_Rect rect = tools.select.rect;
 

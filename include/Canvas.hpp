@@ -12,8 +12,7 @@
 	DO(TOOL_BRUSH, handleToolBrush, ImGuiKey_B) \
 	DO(TOOL_SELECT, handleToolSelect, ImGuiKey_V) \
 	DO(TOOL_BUCKET, handleToolBucket, ImGuiKey_F) \
-	DO(TOOL_INVERT_HORIZONTAL, handleInvertHTool, ImGuiKey_H) \
-	DO(TOOL_INVERT_VERTICAL, handleInvertVTool, ImGuiKey_R)
+	DO(TOOL_INVERT, handleInvertTool, ImGuiKey_R)
 
 class Canvas {
 	public:
@@ -27,6 +26,7 @@ class Canvas {
 
 		static std::unique_ptr<Canvas> create(SDL_Renderer *renderer, const std::string& rom_path);
 		void draw(SDL_Renderer *renderer, TileViewer& tile_viewer);
+		void copyToGlobalBuffer(TileBuffer& tile_copy_buffer);
 		void setTool(Tool tool);
 		bool isOpen(void) const;
 
@@ -53,8 +53,7 @@ class Canvas {
 		void handleToolSelect(void);
 		void handleToolBucket(void);
 		void handleInvertHTool(void);
-		void handleInvertVTool(void);
-		void handleInvertTool(bool horizontal=true);
+		void handleInvertTool(void);
 
 		ImVec2 getNormalPositionOnCanvas(void) const;
 
