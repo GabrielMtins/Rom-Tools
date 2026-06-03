@@ -232,7 +232,8 @@ void Canvas::drawCanvasWindow(void) {
 	ImVec2 area_available;
 	focused = false;
 
-	ImGui::Begin(window_name.c_str(), &open);
+	ImGui::Begin(window_name.c_str(), &open, window_flags);
+
 	area_available = ImGui::GetContentRegionAvail();
 
 	handleInput();
@@ -417,48 +418,52 @@ void Canvas::handleInput(void) {
 
 void Canvas::handleClickImage(void) {
 	if(!ImGui::IsItemHovered()) {
+		window_flags = 0;
 		return;
 	}
 
-	if(!ImGui::IsWindowFocused()) {
-		return;
-	}
-
-	#define EXPAND_AS_CASE(type, function, key) case type: function(); break;
+	window_flags = ImGuiWindowFlags_NoMove;
 
 	switch(tool) {
-		FOR_TOOL_LIST(EXPAND_AS_CASE)
+		FOR_TOOL_LIST(TOOL_LIST_EXPAND_AS_CASE_FUNC)
+
+		default:
+			break;
 	}
-
-	#undef EXPAND_AS_CASE
-
 }
 
 void Canvas::handleToolBrush(void) {
 	ImVec2 pos = getIntegerPositionOnViewer();
 
-	if(ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-		undo_system.beginAction();
-		
-		tools.brush.old_x = pos.x;
-		tools.brush.old_y = pos.y;
-	}
+	if(!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+		if(!tools.brush.active) return;
 
-	if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-		bresenhamLine(
-				tools.brush.old_x,
-				tools.brush.old_y,
-				pos.x,
-				pos.y,
-				selected_color,
-				true
-				);
-
-		tools.brush.old_x = pos.x;
-		tools.brush.old_y = pos.y;
-	} else {
+		tools.brush.active = false;
 		undo_system.endAction(rom.viewer);
+		return;
 	}
+
+	if(!tools.brush.active) {
+		tools.brush.active = true;
+
+		undo_system.beginAction();
+		tools.brush.old_x = pos.x;
+		tools.brush.old_y = pos.y;
+
+		return;
+	}
+
+	bresenhamLine(
+			tools.brush.old_x,
+			tools.brush.old_y,
+			pos.x,
+			pos.y,
+			selected_color,
+			true
+			);
+
+	tools.brush.old_x = pos.x;
+	tools.brush.old_y = pos.y;
 }
 
 void Canvas::handleToolSelect(void) {
@@ -571,16 +576,41 @@ void Canvas::handleToolPaste(void) {
 void Canvas::handleToolRect(void) {
 	ImVec2 pos = getIntegerPositionOnViewer();
 
-	if(ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+	if(!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+		if(!tools.rect.selected) {
+			return;
+		}
+
+		undo_system.beginAction();
+
+		const auto& rect = tools.rect.px_rect;
+
+		for(int j = 0; j < rect.h; j++) {
+			for(int i = 0; i < rect.w; i++) {
+				putPixel(
+						rect.x + i,
+						rect.y + j,
+						selected_color,
+						true
+						);
+			}
+		}
+
+		undo_system.endAction(rom.viewer);
+
+		tools.rect.selected = false;
+		return;
+	}
+
+	if(!tools.rect.selected) {
 		tools.rect.start_x = pos.x;
 		tools.rect.start_y = pos.y;
 		tools.rect.selected = true;
+		return;
 	}
 
-	if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-		tools.rect.end_x = pos.x;
-		tools.rect.end_y = pos.y;
-	}
+	tools.rect.end_x = pos.x;
+	tools.rect.end_y = pos.y;
 
 	{
 		int start_x = tools.rect.start_x;
@@ -600,47 +630,48 @@ void Canvas::handleToolRect(void) {
 			start_x, start_y, width, height
 		};
 	}
-
-	if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
-		undo_system.beginAction();
-
-		const auto& rect = tools.rect.px_rect;
-
-		for(int j = 0; j < rect.h; j++) {
-			for(int i = 0; i < rect.w; i++) {
-				putPixel(
-						rect.x + i,
-						rect.y + j,
-						selected_color,
-						true
-						);
-			}
-		}
-
-		undo_system.endAction(rom.viewer);
-
-		tools.rect.selected = false;
-	}
 }
 
 void Canvas::handleToolLine(void) {
 	ImVec2 pos = getIntegerPositionOnViewer();
 
-	if(ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+	if(!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+		if(!tools.line.active) return;
+
+		tools.line.active = false;
+
+		undo_system.beginAction();
+
+		bresenhamLine(
+				tools.line.start_x,
+				tools.line.start_y,
+				tools.line.end_x,
+				tools.line.end_y,
+				selected_color
+				);
+
+		undo_system.endAction(rom.viewer);
+		return;
+	}
+
+	if(!tools.line.active) {
 		tools.line.start_x = pos.x;
 		tools.line.start_y = pos.y;
+		tools.line.end_x = pos.x;
+		tools.line.end_y = pos.y;
 		tools.line.active = true;
+		return;
 	}
 
 	tools.line.end_x = pos.x;
 	tools.line.end_y = pos.y;
 
+	return;
 	if(ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
 		static constexpr int pixel_lim = 4;
 
 		int dx = (pos.x - tools.line.start_x);
 		int dy = (pos.y - tools.line.start_y);
-
 
 		if(std::abs(dx) < pixel_lim) {
 			tools.line.end_x = tools.line.start_x;
@@ -658,22 +689,6 @@ void Canvas::handleToolLine(void) {
 
 			}
 		}
-	}
-
-	if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
-		tools.line.active = false;
-
-		undo_system.beginAction();
-
-		bresenhamLine(
-				tools.line.start_x,
-				tools.line.start_y,
-				tools.line.end_x,
-				tools.line.end_y,
-				selected_color
-				);
-
-		undo_system.endAction(rom.viewer);
 	}
 }
 

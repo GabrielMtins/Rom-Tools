@@ -8,25 +8,14 @@
 
 #include "imgui.h"
 
-#define FOR_TOOL_LIST(DO) \
-	DO(TOOL_BRUSH, handleToolBrush, ImGuiKey_B) \
-	DO(TOOL_SELECT, handleToolSelect, ImGuiKey_V) \
-	DO(TOOL_BUCKET, handleToolBucket, ImGuiKey_F) \
-	DO(TOOL_INVERT, handleToolInvert, ImGuiKey_T) \
-	DO(TOOL_PASTE, handleToolPaste, ImGuiKey_P) \
-	DO(TOOL_RECT, handleToolRect, ImGuiKey_R) \
-	DO(TOOL_LINE, handleToolLine, ImGuiKey_Q) \
-	DO(TOOL_MOVE, handleToolMove, ImGuiKey_Space)
+#include "Tool.hpp"
 
 class Canvas {
 	public:
-		#define EXPAND_AS_ENUM(type, function, key) type,
-
 		enum Tool {
-			FOR_TOOL_LIST(EXPAND_AS_ENUM)
+			FOR_TOOL_LIST(TOOL_LIST_EXPAND_AS_ENUM)
+			COUNT
 		};
-
-		#undef EXPAND_AS_ENUM
 
 		static std::unique_ptr<Canvas> create(SDL_Renderer *renderer, const std::string& rom_path);
 		void draw(SDL_Renderer *renderer, TileViewer& tile_viewer);
@@ -36,6 +25,8 @@ class Canvas {
 		bool isOpen(void) const;
 
 		~Canvas(void);
+
+		static constexpr int NUM_TOOLS = COUNT;
 
 	private:
 		struct PixelTile {
@@ -65,6 +56,7 @@ class Canvas {
 		void handleToolRect(void);
 		void handleToolLine(void);
 		void handleToolMove(void);
+		void resetTools(void);
 
 		ImVec2 getNormalPositionOnCanvas(void) const;
 		ImVec2 getIntegerPositionOnViewer(void) const;
@@ -109,6 +101,7 @@ class Canvas {
 		struct {
 			struct {
 				int old_x, old_y;
+				bool active = false;
 			} brush;
 
 			struct {
@@ -142,6 +135,8 @@ class Canvas {
 		} tools;
 
 		TileBuffer tile_tmp_buffer;
+
+		ImGuiWindowFlags window_flags = 0;
 
 		static size_t unique_identifier;
 		static TileBuffer tile_copy_buffer;

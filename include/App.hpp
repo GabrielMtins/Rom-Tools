@@ -34,6 +34,8 @@ class App {
 		std::vector<std::unique_ptr<Canvas>> canvas_list;
 
 		TileBuffer tile_copy_buffer;
+
+		static constexpr uint32_t MIN_TIME_FRAME = 16;
 };
 
 #endif

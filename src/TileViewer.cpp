@@ -67,6 +67,10 @@ void TileViewer::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
 	int x = x1, y = y1;
 
 	while(1) {
+		if(x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT) {
+			break;
+		}
+
 		pixels[x + y * pitch] = color;
 
 		if(x == x2 && y == y2) break;

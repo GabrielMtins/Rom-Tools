@@ -10,6 +10,12 @@
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
 
+#include "Style.hpp"
+
+static constexpr std::array<const char *, Canvas::NUM_TOOLS> tool_icons = {
+	FOR_TOOL_LIST(TOOL_LIST_EXPAND_AS_ICON_LIST)
+};
+
 App::App(void) {
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
 		std::cerr << SDL_GetError() << '\n';
@@ -52,12 +58,15 @@ App::App(void) {
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 	ImGui::StyleColorsDark();
-	//SetupImGuiPaperAndInkStyle();
-	//SetupImGuiDarkStyle();
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.ScaleAllSizes(main_scale);
 	style.FontScaleDpi = main_scale;
+
+	Style::setUpFonts();
+	//Style::setUpDarkTheme();
+	//Style::setUpPaperAndInkStyle();
+	Style::setUpCatppuccinStyle();
 
 	ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
 	ImGui_ImplSDLRenderer2_Init(renderer);
@@ -88,6 +97,8 @@ App::~App(void) {
 
 void App::loop(void) {
 	SDL_Event event;
+	uint32_t next_tick, last_tick, dt;
+	last_tick = SDL_GetTicks();
 
 	while(SDL_PollEvent(&event)) {
 		ImGui_ImplSDL2_ProcessEvent(&event);
@@ -110,6 +121,14 @@ void App::loop(void) {
 	renderCanvasList();
 
 	endRender();
+
+	next_tick = SDL_GetTicks();
+
+	dt = next_tick - last_tick;
+
+	if(dt < MIN_TIME_FRAME) {
+		SDL_Delay(MIN_TIME_FRAME - dt);
+	}
 }
 
 void App::renderMenubar(void) {
@@ -143,10 +162,22 @@ void App::renderMenubar(void) {
 void App::renderToolbar(void) {
 	ImGui::Begin("Toolbar");
 
-	ImGui::Button("hi0");
-	ImGui::Button("hi1");
-	ImGui::Button("hi2");
-	ImGui::Button("hi3");
+	ImVec2 button_dim(24.0f, 24.0f);
+
+	for(size_t i = 0; i < Canvas::NUM_TOOLS; i++) {
+		bool is_selected = (Canvas::getTool() == i);
+
+		ImVec2 text_size = ImGui::CalcTextSize(tool_icons[i]);
+        float text_offset = (button_dim.x - text_size.x) * 0.5f;
+
+		if(ImGui::Selectable(("##tool" + std::to_string(i)).c_str(), is_selected, 0, button_dim)) {
+			Canvas::setTool(static_cast<Canvas::Tool>(i));
+		}
+
+		ImGui::SameLine();
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() - button_dim.x + text_offset);
+		ImGui::Text("%s", tool_icons[i]);
+	}
 
 	ImGui::End();
 }
@@ -169,11 +200,7 @@ void App::renderCanvasList(void) {
 }
 
 void App::handleInput(void) {
-	#define EXPAND_AS_INPUT(type, function, key) if(ImGui::IsKeyPressed(key) && !ImGui::IsKeyDown(ImGuiKey_LeftCtrl)) Canvas::setTool(Canvas::type);
-
-	FOR_TOOL_LIST(EXPAND_AS_INPUT);
-
-	#undef EXPAND_AS_INPUT
+	FOR_TOOL_LIST(TOOL_LIST_EXPAND_AS_INPUT_CANVAS);
 }
 
 void App::beginRender(void) {
