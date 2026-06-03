@@ -12,10 +12,6 @@
 
 #include "Style.hpp"
 
-static constexpr std::array<const char *, Canvas::NUM_TOOLS> tool_icons = {
-	FOR_TOOL_LIST(TOOL_LIST_EXPAND_AS_ICON_LIST)
-};
-
 App::App(void) {
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
 		std::cerr << SDL_GetError() << '\n';

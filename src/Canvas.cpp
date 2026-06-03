@@ -623,7 +623,6 @@ void Canvas::handleToolRect(void) {
 		tools.rect.start_x = pos.x;
 		tools.rect.start_y = pos.y;
 		tools.rect.selected = true;
-		return;
 	}
 
 	tools.rect.end_x = pos.x;
@@ -674,16 +673,12 @@ void Canvas::handleToolLine(void) {
 	if(!tools.line.active) {
 		tools.line.start_x = pos.x;
 		tools.line.start_y = pos.y;
-		tools.line.end_x = pos.x;
-		tools.line.end_y = pos.y;
 		tools.line.active = true;
-		return;
 	}
 
 	tools.line.end_x = pos.x;
 	tools.line.end_y = pos.y;
 
-	return;
 	if(ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
 		static constexpr int pixel_lim = 4;
 

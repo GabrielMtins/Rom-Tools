@@ -4,10 +4,6 @@
 #include "Tool.hpp"
 #include "Canvas.hpp"
 
-static const char *tool_icons[] = {
-	FOR_TOOL_LIST(TOOL_LIST_EXPAND_AS_ICON_LIST)
-};
-
 void Toolbar::render(void) {
 	ImGui::Begin("Toolbar");
 
