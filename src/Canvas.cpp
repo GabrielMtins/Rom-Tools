@@ -158,7 +158,7 @@ void Canvas::renderLines(SDL_Renderer *renderer) {
 }
 
 void Canvas::renderPaste(SDL_Renderer *renderer) {
-	if(tool != TOOL_PASTE) {
+	if(image_input_type != IMAGE_INPUT_PASTE) {
 		return;
 	}
 
@@ -325,6 +325,10 @@ void Canvas::handleInput(void) {
 		offset_tiles_y -= TileViewer::TILES_PER_COLUMN;
 	}
 
+	if(ImGui::IsKeyPressed(ImGuiKey_Space)) {
+		image_input_type = IMAGE_INPUT_MOVE;
+	}
+
 	if(ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftCtrl)) {
 		float mouse_wheel = ImGui::GetIO().MouseWheel;
 
@@ -385,7 +389,7 @@ void Canvas::handleInput(void) {
 	}
 
 	if(ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_V)) {
-		setTool(TOOL_PASTE);
+		image_input_type = IMAGE_INPUT_PASTE;
 	}
 
 	offset_tiles_x += int(-ImGui::GetIO().MouseWheelH);
@@ -420,6 +424,19 @@ void Canvas::handleClickImage(void) {
 	if(!ImGui::IsItemHovered()) {
 		window_flags = 0;
 		return;
+	}
+
+	switch(image_input_type) {
+		case IMAGE_INPUT_PASTE:
+			handleInputPaste();
+			return;
+
+		case IMAGE_INPUT_MOVE:
+			handleInputMove();
+			return;
+
+		default:
+			break;
 	}
 
 	window_flags = ImGuiWindowFlags_NoMove;
@@ -551,9 +568,9 @@ void Canvas::handleToolInvert(void) {
 	undo_system.endAction(rom.viewer);
 }
 
-void Canvas::handleToolPaste(void) {
+void Canvas::handleInputPaste(void) {
 	if(ImGui::IsKeyPressed(ImGuiKey_Escape)) {
-		setTool(old_tool);
+		image_input_type = IMAGE_INPUT_TOOL;
 		return;
 	}
 
@@ -569,7 +586,7 @@ void Canvas::handleToolPaste(void) {
 
 		undo_system.endAction(rom.viewer);
 
-		setTool(old_tool);
+		image_input_type = IMAGE_INPUT_TOOL;
 	}
 }
 
@@ -692,9 +709,9 @@ void Canvas::handleToolLine(void) {
 	}
 }
 
-void Canvas::handleToolMove(void) {
+void Canvas::handleInputMove(void) {
 	if(!ImGui::IsKeyDown(ImGuiKey_Space)) {
-		setTool(old_tool);
+		image_input_type = IMAGE_INPUT_TOOL;
 		tools.move.active = false;
 		return;
 	}

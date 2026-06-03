@@ -35,6 +35,12 @@ class Canvas {
 			int y;
 		};
 
+		enum ImageInputType {
+			IMAGE_INPUT_TOOL,
+			IMAGE_INPUT_MOVE,
+			IMAGE_INPUT_PASTE
+		};
+
 		void renderToTexture(SDL_Renderer *renderer, TileViewer& tile_viewer);
 		void renderSelectRect(SDL_Renderer *renderer);
 		void renderLines(SDL_Renderer *renderer);
@@ -52,11 +58,12 @@ class Canvas {
 		void handleToolSelect(void);
 		void handleToolBucket(void);
 		void handleToolInvert(void);
-		void handleToolPaste(void);
 		void handleToolRect(void);
 		void handleToolLine(void);
-		void handleToolMove(void);
 		void resetTools(void);
+
+		void handleInputPaste(void);
+		void handleInputMove(void);
 
 		ImVec2 getNormalPositionOnCanvas(void) const;
 		ImVec2 getIntegerPositionOnViewer(void) const;
@@ -137,6 +144,8 @@ class Canvas {
 		TileBuffer tile_tmp_buffer;
 
 		ImGuiWindowFlags window_flags = 0;
+
+		ImageInputType image_input_type = IMAGE_INPUT_TOOL;
 
 		static size_t unique_identifier;
 		static TileBuffer tile_copy_buffer;

@@ -6,10 +6,10 @@
 	DO(TOOL_BRUSH,    handleToolBrush,    ImGuiKey_B,       "\uf304") \
 	DO(TOOL_BUCKET,   handleToolBucket,   ImGuiKey_F,       "\uf576") \
 	DO(TOOL_INVERT,   handleToolInvert,   ImGuiKey_T,       "\uf07e") \
-	DO(TOOL_PASTE,    handleToolPaste,    ImGuiKey_P,       "\uf0ea") \
 	DO(TOOL_RECT,     handleToolRect,     ImGuiKey_R,       "\uf0c8") \
-	DO(TOOL_LINE,     handleToolLine,     ImGuiKey_Q,       "\uf5ad") \
-	DO(TOOL_MOVE,     handleToolMove,     ImGuiKey_Space,   "\uf0b2")
+	DO(TOOL_LINE,     handleToolLine,     ImGuiKey_Q,       "\uf5ad") 
+	//DO(TOOL_PASTE,    handleToolPaste,    ImGuiKey_P,       "\uf0ea") \
+	//DO(TOOL_MOVE,     handleToolMove,     ImGuiKey_Space,   "\uf0b2")
 	/*
 	DO(type,          function,           key,              icon)
 	*/
