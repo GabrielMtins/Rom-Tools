@@ -11,11 +11,8 @@ static const char *tool_icons[] = {
 void Toolbar::render(void) {
 	ImGui::Begin("Toolbar");
 
-	ImVec2 button_dim(36.0f, 36.0f);
+	static constexpr ImVec2 button_dim(36.0f, 36.0f);
 	ImVec2 available_area;
-
-	available_area = ImGui::GetContentRegionAvail();
-	ImVec2 start = ImGui::GetItemRectMin();
 
 	for(size_t i = 0; i < Canvas::NUM_TOOLS; i++) {
 		bool is_selected = (Canvas::getTool() == i);
