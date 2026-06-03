@@ -253,11 +253,7 @@ void Canvas::drawCanvasWindow(void) {
 	ImGui::SetNextItemWidth(horizontal_slider_width);
 	ImGui::SliderInt("##vsliderx", &offset_tiles_x, 0, getMaxOffsetXPerZoom(), "");
 
-	if(offset_tiles_x >= getMaxOffsetXPerZoom()) offset_tiles_x = getMaxOffsetXPerZoom();
-	if(offset_tiles_x < 0) offset_tiles_x = 0;
-
-	if(offset_tiles_y >= getMaxOffsetYPerZoom()) offset_tiles_y = getMaxOffsetYPerZoom();
-	if(offset_tiles_y < 0) offset_tiles_y = 0;
+	doOffsetCorrection();
 
 	area_available = ImGui::GetContentRegionAvail();
 
@@ -613,6 +609,31 @@ void Canvas::handleToolLine(void) {
 	tools.line.end_x = pos.x;
 	tools.line.end_y = pos.y;
 
+	if(ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
+		static constexpr int pixel_lim = 4;
+
+		int dx = (pos.x - tools.line.start_x);
+		int dy = (pos.y - tools.line.start_y);
+
+
+		if(std::abs(dx) < pixel_lim) {
+			tools.line.end_x = tools.line.start_x;
+		} else if (std::abs(dy) < pixel_lim) {
+			tools.line.end_y = tools.line.start_y;
+		} else {
+			int coef_ang = (std::abs(dy) * 100) / (std::abs(dx));
+			static constexpr int tan_45 = 100;
+			static constexpr int ang_lim = 20;
+
+			if(std::abs(coef_ang - tan_45) < ang_lim) {
+				int dtot = std::min(std::abs(dx), std::abs(dy));
+				tools.line.end_x = tools.line.start_x + dtot * sign(dx); 
+				tools.line.end_y = tools.line.start_y + dtot * sign(dy); 
+
+			}
+		}
+	}
+
 	if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
 		tools.line.active = false;
 
@@ -628,6 +649,37 @@ void Canvas::handleToolLine(void) {
 
 		undo_system.endAction(rom.viewer);
 	}
+}
+
+void Canvas::handleToolMove(void) {
+	if(!ImGui::IsKeyDown(ImGuiKey_Space)) {
+		setTool(old_tool);
+		tools.move.active = false;
+		return;
+	}
+
+	ImVec2 pos = getNormalPositionOnCanvas();
+
+	if(!tools.move.active) {
+		tools.move.offset_tiles_x = offset_tiles_x;
+		tools.move.offset_tiles_y = offset_tiles_y;
+
+		tools.move.pos_start = pos;
+
+		tools.move.active = true;
+
+		return;
+	}
+
+	const auto& old_pos = tools.move.pos_start;
+
+	int tile_dist_x = roundf((old_pos.x - pos.x) * (TileViewer::TILES_PER_ROW / zoom_level));
+	int tile_dist_y = roundf((old_pos.y - pos.y) * (TileViewer::TILES_PER_COLUMN / zoom_level));
+
+	offset_tiles_x = tools.move.offset_tiles_x + tile_dist_x;
+	offset_tiles_y = tools.move.offset_tiles_y + tile_dist_y;
+
+	doOffsetCorrection();
 }
 
 void Canvas::floodVisible(int selected_color, bool check_for_selection) {
@@ -742,6 +794,19 @@ int Canvas::getMaxOffsetYPerZoom(void) const {
 			(rom.viewer.num_tiles % size_t(TileViewer::TILES_PER_ROW) != 0)
 			) - 
 		TileViewer::TILES_PER_COLUMN / zoom_level;
+}
+
+void Canvas::doOffsetCorrection(void) {
+	int max_x, max_y;
+
+	max_x = getMaxOffsetXPerZoom();
+	max_y = getMaxOffsetYPerZoom();
+
+	if(offset_tiles_x >= max_x) offset_tiles_x = max_x;
+	if(offset_tiles_x < 0) offset_tiles_x = 0;
+
+	if(offset_tiles_y >= max_y) offset_tiles_y = max_y;
+	if(offset_tiles_y < 0) offset_tiles_y = 0;
 }
 
 int Canvas::getTileSizeZoomed(void) const {

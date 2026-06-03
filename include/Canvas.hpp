@@ -15,7 +15,8 @@
 	DO(TOOL_INVERT, handleToolInvert, ImGuiKey_T) \
 	DO(TOOL_PASTE, handleToolPaste, ImGuiKey_P) \
 	DO(TOOL_RECT, handleToolRect, ImGuiKey_R) \
-	DO(TOOL_LINE, handleToolLine, ImGuiKey_G)
+	DO(TOOL_LINE, handleToolLine, ImGuiKey_G) \
+	DO(TOOL_MOVE, handleToolMove, ImGuiKey_Space)
 
 class Canvas {
 	public:
@@ -63,6 +64,7 @@ class Canvas {
 		void handleToolPaste(void);
 		void handleToolRect(void);
 		void handleToolLine(void);
+		void handleToolMove(void);
 
 		ImVec2 getNormalPositionOnCanvas(void) const;
 		ImVec2 getIntegerPositionOnViewer(void) const;
@@ -72,6 +74,7 @@ class Canvas {
 		void decreaseZoom(void);
 		int getMaxOffsetXPerZoom(void) const;
 		int getMaxOffsetYPerZoom(void) const;
+		void doOffsetCorrection(void);
 
 		int getTileSizeZoomed(void) const;
 		bool isTileInsideSelection(size_t tile_id) const;
@@ -130,6 +133,12 @@ class Canvas {
 				int end_x, end_y;
 				bool active = false;
 			} line;
+
+			struct {
+				int offset_tiles_x, offset_tiles_y;
+				ImVec2 pos_start;
+				bool active = false;
+			} move;
 		} tools;
 
 		TileBuffer tile_tmp_buffer;
