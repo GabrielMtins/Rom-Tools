@@ -365,6 +365,24 @@ void Canvas::handleInput(void) {
 		}
 	}
 
+	if(ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_X)) {
+		if(tools.select.selected) {
+			copyFromViewerToBuffer(
+					tools.select.tile_rect.x,
+					tools.select.tile_rect.y,
+					tools.select.tile_rect.w,
+					tools.select.tile_rect.h,
+					tile_copy_buffer
+					);
+
+			undo_system.beginAction();
+			floodVisible(0, true);
+			undo_system.endAction(rom.viewer);
+
+			tools.select.selected = false;
+		}
+	}
+
 	if(ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_V)) {
 		setTool(TOOL_PASTE);
 	}
@@ -385,6 +403,14 @@ void Canvas::handleInput(void) {
 	}
 
 	if(ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+		tools.select.selected = false;
+	}
+
+	if(ImGui::IsKeyPressed(ImGuiKey_Delete)) {
+		undo_system.beginAction();
+		floodVisible(0, true);
+		undo_system.endAction(rom.viewer);
+
 		tools.select.selected = false;
 	}
 }

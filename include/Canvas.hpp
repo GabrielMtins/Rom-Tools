@@ -15,7 +15,7 @@
 	DO(TOOL_INVERT, handleToolInvert, ImGuiKey_T) \
 	DO(TOOL_PASTE, handleToolPaste, ImGuiKey_P) \
 	DO(TOOL_RECT, handleToolRect, ImGuiKey_R) \
-	DO(TOOL_LINE, handleToolLine, ImGuiKey_G) \
+	DO(TOOL_LINE, handleToolLine, ImGuiKey_Q) \
 	DO(TOOL_MOVE, handleToolMove, ImGuiKey_Space)
 
 class Canvas {
