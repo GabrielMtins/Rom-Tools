@@ -10,10 +10,12 @@ namespace Style {
 		font_cfg.FontDataOwnedByAtlas = false;
 		ImGuiIO& io = ImGui::GetIO();
 
+		static constexpr float font_size = 14.0f;
+
 		ImFont *font = io.Fonts->AddFontFromMemoryTTF(
 				(void *) inter_ttf,
 				inter_ttf_len,
-				14.0f,
+				font_size,
 				&font_cfg
 				);
 
@@ -22,7 +24,7 @@ namespace Style {
 		}
 
 		font_cfg.MergeMode = true;
-		font_cfg.GlyphMinAdvanceX = 14.0f;
+		font_cfg.GlyphMinAdvanceX = font_size;
 
 		static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 };
 		io.Fonts->AddFontFromMemoryTTF(
@@ -185,12 +187,13 @@ namespace Style {
 		style.GrabMinSize = 12.0f;
 	
 		// --- 2. Borders & Rounding ---
-		style.WindowRounding = 8.0f;
-		style.FrameRounding = 5.0f;
-		style.PopupRounding = 5.0f;
-		style.ScrollbarRounding = 12.0f;
-		style.GrabRounding = 5.0f;
-		style.TabRounding = 5.0f;
+		//style.WindowRounding = 8.0f;
+		style.WindowRounding = 0.0f;
+		style.FrameRounding = 0.0f;
+		style.PopupRounding = 0.0f;
+		style.ScrollbarRounding = 0.0f;
+		style.GrabRounding = 0.0f;
+		style.TabRounding = 0.0f;
 	
 		style.WindowBorderSize = 1.0f;
 		style.FrameBorderSize = 0.0f; // Minimalist look

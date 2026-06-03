@@ -117,8 +117,9 @@ void App::loop(void) {
 	ImGui::DockSpaceOverViewport();
 
 	renderMenubar();
-	renderToolbar();
 	renderCanvasList();
+
+	toolbar.render();
 
 	endRender();
 
@@ -157,29 +158,6 @@ void App::renderMenubar(void) {
 		ImGui::EndMainMenuBar();
 
 	}
-}
-
-void App::renderToolbar(void) {
-	ImGui::Begin("Toolbar");
-
-	ImVec2 button_dim(24.0f, 24.0f);
-
-	for(size_t i = 0; i < Canvas::NUM_TOOLS; i++) {
-		bool is_selected = (Canvas::getTool() == i);
-
-		ImVec2 text_size = ImGui::CalcTextSize(tool_icons[i]);
-        float text_offset = (button_dim.x - text_size.x) * 0.5f;
-
-		if(ImGui::Selectable(("##tool" + std::to_string(i)).c_str(), is_selected, 0, button_dim)) {
-			Canvas::setTool(static_cast<Canvas::Tool>(i));
-		}
-
-		ImGui::SameLine();
-		ImGui::SetCursorPosX(ImGui::GetCursorPosX() - button_dim.x + text_offset);
-		ImGui::Text("%s", tool_icons[i]);
-	}
-
-	ImGui::End();
 }
 
 void App::renderCanvasList(void) {

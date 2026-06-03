@@ -10,6 +10,7 @@
 #include "Canvas.hpp"
 
 #include "TileBuffer.hpp"
+#include "Toolbar.hpp"
 
 class App {
 	public:
@@ -20,7 +21,6 @@ class App {
 	private:
 		void loop(void);
 		void renderMenubar(void);
-		void renderToolbar(void);
 		void renderCanvasList(void);
 		void handleInput(void);
 		void beginRender(void);
@@ -33,7 +33,7 @@ class App {
 		std::unique_ptr<TileViewer> tile_viewer;
 		std::vector<std::unique_ptr<Canvas>> canvas_list;
 
-		TileBuffer tile_copy_buffer;
+		Toolbar toolbar;
 
 		static constexpr uint32_t MIN_TIME_FRAME = 16;
 };
