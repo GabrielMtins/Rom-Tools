@@ -178,7 +178,32 @@ namespace Style {
 	void setUpCatppuccinStyle() {
 		ImGuiStyle& style = ImGui::GetStyle();
 		ImVec4* colors = style.Colors;
+
+		// --- 1. Sizing & Spacing (Clean & Rigid) ---
+		style.WindowPadding = ImVec2(12.0f, 12.0f);
+		style.FramePadding = ImVec2(6.0f, 4.0f);
+		style.CellPadding = ImVec2(6.0f, 4.0f);
+		style.ItemSpacing = ImVec2(8.0f, 6.0f);
+		style.ItemInnerSpacing = ImVec2(6.0f, 4.0f);
+		style.ScrollbarSize = 14.0f;
+		style.GrabMinSize = 12.0f;
 	
+		// --- 2. Borders & Rounding (Technical/Drafting feel) ---
+		style.WindowRounding = 2.0f;
+		style.ChildRounding = 2.0f;
+		style.FrameRounding = 2.0f;
+		style.PopupRounding = 2.0f;
+		style.ScrollbarRounding = 12.0f;
+		style.GrabRounding = 2.0f;
+		style.TabRounding = 2.0f;
+	
+		style.WindowBorderSize = 1.0f;
+		style.ChildBorderSize = 1.0f;
+		style.PopupBorderSize = 1.0f;
+		style.FrameBorderSize = 1.0f;
+		style.TabBorderSize = 1.0f;
+	
+		/*
 		// --- 1. Sizing and Spacing (Soft & Modern) ---
 		style.WindowPadding = ImVec2(12.0f, 12.0f);
 		style.FramePadding = ImVec2(6.0f, 4.0f);
@@ -198,6 +223,7 @@ namespace Style {
 		style.WindowBorderSize = 1.0f;
 		style.FrameBorderSize = 0.0f; // Minimalist look
 		style.PopupBorderSize = 1.0f;
+		*/
 	
 		// --- 3. The Catppuccin Mocha Palette ---
 		// Base: #1e1e2e | Mantle: #181825 | Crust: #11111b

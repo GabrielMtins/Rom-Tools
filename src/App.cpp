@@ -11,8 +11,11 @@
 #include "imgui_impl_sdlrenderer2.h"
 
 #include "Style.hpp"
+#include "Localization.hpp"
 
 App::App(void) {
+	i18n::setLanguage(i18n::LANG_EN_US);
+
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
 		std::cerr << SDL_GetError() << '\n';
 		exit(-1);
@@ -130,12 +133,12 @@ void App::loop(void) {
 
 void App::renderMenubar(void) {
 	if(ImGui::BeginMainMenuBar()) {
-		if(ImGui::BeginMenu("File")) {
-			ImGui::MenuItem("New");
-			ImGui::MenuItem("Open");
-			ImGui::MenuItem("Save");
-			ImGui::MenuItem("Save as");
-			ImGui::MenuItem("Exit");
+		if(ImGui::BeginMenu(i18n::File)) {
+			ImGui::MenuItem(i18n::New);
+			ImGui::MenuItem(i18n::Open);
+			ImGui::MenuItem(i18n::Save);
+			ImGui::MenuItem(i18n::SaveAs);
+			ImGui::MenuItem(i18n::Quit);
 			ImGui::EndMenu();
 		}
 
