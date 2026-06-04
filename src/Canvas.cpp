@@ -11,6 +11,7 @@
 size_t Canvas::unique_identifier = 0;
 TileBuffer Canvas::tile_copy_buffer;
 std::unique_ptr<TileViewer> Canvas::viewer_copy = nullptr;
+uint8_t Canvas::selected_color = 0;
 Canvas::Tool Canvas::tool = Canvas::TOOL_SELECT;
 Canvas::Tool Canvas::old_tool = Canvas::TOOL_SELECT;
 
@@ -752,7 +753,7 @@ void Canvas::handleInputMove(void) {
 	doOffsetCorrection();
 }
 
-void Canvas::floodVisible(int selected_color, bool check_for_selection) {
+void Canvas::floodVisible(uint8_t selected_color, bool check_for_selection) {
 	int x, y, w, h;
 
 	x = offset_tiles_x * TileViewer::TILE_SIZE;
@@ -768,8 +769,8 @@ void Canvas::floodVisible(int selected_color, bool check_for_selection) {
 	}
 }
 
-void Canvas::floodFill(int start_x, int start_y, int selected_color, bool check_for_selection) {
-	int first_color = getPixel(start_x, start_y);
+void Canvas::floodFill(int start_x, int start_y, uint8_t selected_color, bool check_for_selection) {
+	uint8_t first_color = getPixel(start_x, start_y);
 
 	if(first_color == selected_color) {
 		return;
@@ -787,7 +788,7 @@ void Canvas::floodFill(int start_x, int start_y, int selected_color, bool check_
 			continue;
 		}
 
-		int c = getPixel(x, y);
+		uint8_t c = getPixel(x, y);
 
 		if(c != first_color) {
 			continue;
@@ -900,7 +901,7 @@ bool Canvas::isTileInsideSelection(size_t tile_id) const {
 	return true;
 }
 
-bool Canvas::putPixel(int x, int y, int selected_color, bool check_for_selection) {
+bool Canvas::putPixel(int x, int y, uint8_t selected_color, bool check_for_selection) {
 	PixelTile px = convertToPixelTile(x, y);
 
 	if(check_for_selection && tools.select.selected) {
@@ -926,7 +927,7 @@ bool Canvas::putPixel(int x, int y, int selected_color, bool check_for_selection
 	return true;
 }
 
-void Canvas::bresenhamLine(int x1, int y1, int x2, int y2, int selected_color, bool check_for_selection) {
+void Canvas::bresenhamLine(int x1, int y1, int x2, int y2, uint8_t selected_color, bool check_for_selection) {
 	int dx = std::abs(x2 - x1);
 	int dy = std::abs(y2 - y1);
 
@@ -955,7 +956,7 @@ void Canvas::bresenhamLine(int x1, int y1, int x2, int y2, int selected_color, b
 	}
 }
 
-int Canvas::getPixel(int x, int y) const {
+uint8_t Canvas::getPixel(int x, int y) const {
 	PixelTile px = convertToPixelTile(x, y);
 
 	return Rom_GetTilePixelColor(

@@ -24,6 +24,8 @@ class Canvas {
 		void drawCanvasWindow(const App& app);
 		static void setTool(Tool new_tool);
 		static Tool getTool(void);
+		static size_t getSelectedColor(void);
+		static size_t setSelectedColor(void);
 
 		bool isOpen(void) const;
 		bool isOnFocus(void) const;
@@ -82,11 +84,11 @@ class Canvas {
 		bool isTileInsideSelection(size_t tile_id) const;
 
 		/* Os parâmetros das funções abaixos PRECISAM estar em coordenadas do TileViewer. */
-		bool putPixel(int x, int y, int selected_color, bool check_for_selection = false);
-		void bresenhamLine(int x1, int y1, int x2, int y2, int selected_color, bool check_for_selection=false);
-		void floodVisible(int selected_color, bool check_for_selection=false);
-		void floodFill(int start_x, int start_y, int selected_color, bool check_for_selection=false);
-		int getPixel(int x, int y) const;
+		bool putPixel(int x, int y, uint8_t selected_color, bool check_for_selection = false);
+		void bresenhamLine(int x1, int y1, int x2, int y2, uint8_t selected_color, bool check_for_selection=false);
+		void floodVisible(uint8_t selected_color, bool check_for_selection=false);
+		void floodFill(int start_x, int start_y, uint8_t selected_color, bool check_for_selection=false);
+		uint8_t getPixel(int x, int y) const;
 		bool isPixelInsideCanvasView(int x, int y) const;
 		void copyFromViewerToBuffer(int x, int y, int w, int h, TileBuffer& buffer) const;
 		void copyFromBufferToViewer(int x, int y, const TileBuffer& buffer);
@@ -104,8 +106,6 @@ class Canvas {
 		bool wait_for_mouse_button_release = false;
 
 		float horizontal_slider_width = -1.0f;
-
-		int selected_color = 0;
 
 		SDL_Texture *texture = NULL;
 
@@ -154,6 +154,8 @@ class Canvas {
 		static size_t unique_identifier;
 		static TileBuffer tile_copy_buffer;
 		static std::unique_ptr<TileViewer> viewer_copy;
+
+		static uint8_t selected_color;
 
 		static Tool tool;
 		static Tool old_tool;
