@@ -29,6 +29,8 @@ Rom_Viewer Rom_CreateViewer(Rom_Format format, void *data, size_t size);
 
 size_t Rom_GetRomSizeByTiles(Rom_Format format, size_t num_tiles);
 
+size_t Rom_GetFormatMaxColors(Rom_Format format);
+
 void Rom_AdvanceOffset(Rom_Viewer *viewer, size_t offset_tiles);
 
 uint8_t Rom_GetTilePixelColor(const Rom_Viewer *viewer, size_t tile_id, uint8_t x, uint8_t y);
@@ -52,6 +54,19 @@ typedef struct {
 typedef struct {
 	uint8_t data[16];
 } Rom_GbTile;
+
+#define EXPAND_AS_SIZEOF(id, type, get, set) sizeof(type),
+static const size_t format_size[] = {
+	FOR_TILE_TYPE_LIST(EXPAND_AS_SIZEOF)
+};
+#undef EXPAND_AS_SIZEOF
+
+#define EXPAND_AS_MAX_COLORS(id, type, get, set) (1 << ((sizeof(type) * 8) / 64)),
+static const size_t format_max_colors[] = {
+	FOR_TILE_TYPE_LIST(EXPAND_AS_MAX_COLORS)
+};
+#undef EXPAND_AS_MAX_COLORS
+
 
 static uint8_t Nes_GetColor(const Rom_NesTile *tile, uint8_t x, uint8_t y) {
 	x = 7 - x;
@@ -88,29 +103,17 @@ Rom_Viewer Rom_CreateViewer(Rom_Format format, void *data, size_t size) {
 	viewer.data = data;
 	viewer.format = format;
 
-	#define EXPAND_AS_CASE(id, type, get, set) case id: viewer.num_tiles = size / sizeof(type); break;
-
-	switch(format) {
-		FOR_TILE_TYPE_LIST(EXPAND_AS_CASE)
-	}
-
-	#undef EXPAND_AS_CASE
+	viewer.num_tiles = size / format_size[format];
 
 	return viewer;
 }
 
 size_t Rom_GetRomSizeByTiles(Rom_Format format, size_t num_tiles) {
-	size_t ret = 0;
+	return num_tiles * format_size[format];
+}
 
-	#define EXPAND_AS_CASE(id, type, get, set) case id: ret = num_tiles * sizeof(type); break;
-
-	switch(format) {
-		FOR_TILE_TYPE_LIST(EXPAND_AS_CASE)
-	}
-
-	#undef EXPAND_AS_CASE
-
-	return ret;
+size_t Rom_GetFormatMaxColors(Rom_Format format) {
+	return format_max_colors[format];
 }
 
 void Rom_AdvanceOffset(Rom_Viewer *viewer, size_t offset_tiles) {
@@ -120,13 +123,7 @@ void Rom_AdvanceOffset(Rom_Viewer *viewer, size_t offset_tiles) {
 		return;
 	}
 
-	#define EXPAND_AS_CASE(id, type, get, set) case id: offset_bytes = offset_tiles * sizeof(type); break;
-
-	switch(viewer->format) {
-		FOR_TILE_TYPE_LIST(EXPAND_AS_CASE)
-	}
-
-	#undef EXPAND_AS_CASE
+	offset_bytes = offset_tiles * format_size[viewer->format];
 
 	viewer->data = (void *) (((uint8_t *) viewer->data) + offset_bytes);
 
