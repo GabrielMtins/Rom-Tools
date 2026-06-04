@@ -17,6 +17,8 @@ class App {
 		App(void);
 		void run(void);
 		~App(void);
+		
+		bool isAnyCanvasOnFocus(void) const;
 
 	private:
 		void loop(void);
@@ -34,6 +36,7 @@ class App {
 		std::vector<std::unique_ptr<Canvas>> canvas_list;
 
 		Toolbar toolbar;
+		bool is_any_canvas_on_focus = false;
 
 		static constexpr uint32_t MIN_TIME_FRAME = 16;
 };

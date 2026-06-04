@@ -94,6 +94,10 @@ App::~App(void) {
 	SDL_Quit();
 }
 
+bool App::isAnyCanvasOnFocus(void) const {
+	return is_any_canvas_on_focus;
+}
+
 void App::loop(void) {
 	SDL_Event event;
 	uint32_t next_tick, last_tick, dt;
@@ -160,8 +164,13 @@ void App::renderMenubar(void) {
 }
 
 void App::renderCanvasList(void) {
+	bool next_is_any_canvas_on_focus = false;
+
 	for(auto& canvas : canvas_list) {
-		canvas->draw(renderer, *tile_viewer);
+		canvas->renderFramebuffer(renderer, *tile_viewer);
+		canvas->drawCanvasWindow(*this);
+
+		next_is_any_canvas_on_focus |= canvas->isOnFocus();
 	}
 
 	canvas_list.erase(
@@ -174,6 +183,8 @@ void App::renderCanvasList(void) {
 				),
 			canvas_list.end()
 			);
+
+	is_any_canvas_on_focus = next_is_any_canvas_on_focus;
 }
 
 void App::handleInput(void) {

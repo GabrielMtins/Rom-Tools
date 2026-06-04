@@ -10,6 +10,8 @@
 
 #include "Tool.hpp"
 
+class App;
+
 class Canvas {
 	public:
 		enum Tool {
@@ -18,11 +20,13 @@ class Canvas {
 		};
 
 		static std::unique_ptr<Canvas> create(SDL_Renderer *renderer, const std::string& rom_path);
-		void draw(SDL_Renderer *renderer, TileViewer& tile_viewer);
+		void renderFramebuffer(SDL_Renderer *renderer, TileViewer& tile_viewer);
+		void drawCanvasWindow(const App& app);
 		static void setTool(Tool new_tool);
 		static Tool getTool(void);
 
 		bool isOpen(void) const;
+		bool isOnFocus(void) const;
 
 		~Canvas(void);
 
@@ -48,11 +52,10 @@ class Canvas {
 		void renderToolRect(SDL_Renderer *renderer);
 		void renderToolLine(TileViewer &tile_viewer);
 
-		void drawCanvasWindow(void);
 		SDL_Rect computeSrcRect(void) const;
 
 		void handleInput(void);
-		void handleClickImage(void);
+		void handleClickImage(const App& app);
 
 		void handleToolBrush(void);
 		void handleToolSelect(void);
@@ -97,7 +100,8 @@ class Canvas {
 		int zoom_level = 1;
 		std::string window_name;
 		bool open = true;
-		bool focused = false;
+		bool is_on_focus = false;
+		bool wait_for_mouse_button_release = false;
 
 		float horizontal_slider_width = -1.0f;
 

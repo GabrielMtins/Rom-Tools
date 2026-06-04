@@ -1,16 +1,18 @@
 #include "Canvas.hpp"
 
 #include "imgui.h"
+#include "Toolbar.hpp"
+
+#include "App.hpp"
 
 #define MAX_ZOOM_LEVEL 16
+#define sign(x) ((x) > 0 ? 1 : -1)
 
 size_t Canvas::unique_identifier = 0;
 TileBuffer Canvas::tile_copy_buffer;
 std::unique_ptr<TileViewer> Canvas::viewer_copy = nullptr;
 Canvas::Tool Canvas::tool = Canvas::TOOL_SELECT;
 Canvas::Tool Canvas::old_tool = Canvas::TOOL_SELECT;
-
-#define sign(x) ((x) > 0 ? 1 : -1)
 
 std::unique_ptr<Canvas> Canvas::create(SDL_Renderer *renderer, const std::string& rom_path) {
 	auto canvas = std::make_unique<Canvas>();
@@ -42,12 +44,10 @@ std::unique_ptr<Canvas> Canvas::create(SDL_Renderer *renderer, const std::string
 	return canvas;
 }
 
-void Canvas::draw(SDL_Renderer *renderer, TileViewer& tile_viewer) {
-	if(focused) {
+void Canvas::renderFramebuffer(SDL_Renderer *renderer, TileViewer& tile_viewer) {
+	if(is_on_focus) {
 		renderToTexture(renderer, tile_viewer);
 	}
-
-	drawCanvasWindow();
 }
 
 void Canvas::setTool(Tool new_tool) {
@@ -64,6 +64,10 @@ Canvas::Tool Canvas::getTool(void) {
 
 bool Canvas::isOpen(void) const {
 	return open;
+}
+
+bool Canvas::isOnFocus(void) const {
+	return is_on_focus;
 }
 
 void Canvas::renderToTexture(SDL_Renderer *renderer, TileViewer& tile_viewer) {
@@ -228,9 +232,9 @@ void Canvas::renderToolLine(TileViewer& tile_viewer) {
 			);
 }
 
-void Canvas::drawCanvasWindow(void) {
+void Canvas::drawCanvasWindow(const App& app) {
 	ImVec2 area_available;
-	focused = false;
+	is_on_focus = false;
 
 	ImGui::Begin(window_name.c_str(), &open, window_flags);
 
@@ -267,7 +271,7 @@ void Canvas::drawCanvasWindow(void) {
 			ImVec2(less, less)
 			);
 
-	handleClickImage();
+	handleClickImage(app);
 
 	ImGui::EndGroup();
 
@@ -291,7 +295,7 @@ void Canvas::handleInput(void) {
 		return;
 	}
 
-	focused = true;
+	is_on_focus = true;
 
 	if(ImGui::IsKeyPressed(ImGuiKey_Minus)) {
 		decreaseZoom();
@@ -420,9 +424,22 @@ void Canvas::handleInput(void) {
 	}
 }
 
-void Canvas::handleClickImage(void) {
+void Canvas::handleClickImage(const App& app) {
 	if(!ImGui::IsItemHovered()) {
 		window_flags = 0;
+		return;
+	}
+
+	if(!ImGui::IsWindowFocused() && app.isAnyCanvasOnFocus()) {
+		wait_for_mouse_button_release = true;
+		return;
+	}
+
+	if(wait_for_mouse_button_release) {
+		if(!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+			wait_for_mouse_button_release = false;
+		}
+
 		return;
 	}
 
@@ -518,7 +535,7 @@ void Canvas::handleToolSelect(void) {
 }
 
 void Canvas::handleToolBucket(void) {
-	if(!ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+	if(!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
 		return;
 	}
 	
@@ -1023,19 +1040,6 @@ Canvas::PixelTile Canvas::convertToPixelTile(int x, int y) const {
 		x % TileViewer::TILE_SIZE,
 		y % TileViewer::TILE_SIZE
 	};
-	/*
-	int tile_size = TileViewer::TILE_SIZE * zoom_level;
-
-	int tile_x = (x / tile_size) + offset_tiles_x;
-	int tile_y = (y / tile_size) + offset_tiles_y;
-
-	size_t tile_id = tile_x + tile_y * TileViewer::TILES_PER_ROW;
-
-	int inside_x = ((x % tile_size) / zoom_level) % TileViewer::TILE_SIZE;
-	int inside_y = ((y % tile_size) / zoom_level) % TileViewer::TILE_SIZE;
-
-	return PixelTile{tile_id, inside_x, inside_y};
-	*/
 }
 
 Canvas::~Canvas(void) {
