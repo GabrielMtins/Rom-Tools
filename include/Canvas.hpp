@@ -20,15 +20,17 @@ class Canvas {
 		};
 
 		static std::unique_ptr<Canvas> create(SDL_Renderer *renderer, const std::string& rom_path);
-		void renderFramebuffer(SDL_Renderer *renderer, TileViewer& tile_viewer);
+		void renderFramebuffer(SDL_Renderer *renderer);
 		void drawCanvasWindow(const App& app);
 		static void setTool(Tool new_tool);
 		static Tool getTool(void);
-		static size_t getSelectedColor(void);
-		static size_t setSelectedColor(void);
+		static uint8_t getSelectedColor(void);
+		static void setSelectedColor(uint8_t new_selected_color);
 
 		bool isOpen(void) const;
 		bool isOnFocus(void) const;
+
+		RomData& getRomData(void);
 
 		~Canvas(void);
 
@@ -47,12 +49,12 @@ class Canvas {
 			IMAGE_INPUT_PASTE
 		};
 
-		void renderToTexture(SDL_Renderer *renderer, TileViewer& tile_viewer);
+		void renderToTexture(SDL_Renderer *renderer);
 		void renderSelectRect(SDL_Renderer *renderer);
 		void renderLines(SDL_Renderer *renderer);
 		void renderPaste(SDL_Renderer *renderer);
 		void renderToolRect(SDL_Renderer *renderer);
-		void renderToolLine(TileViewer &tile_viewer);
+		void renderToolLine(void);
 
 		SDL_Rect computeSrcRect(void) const;
 
@@ -154,6 +156,7 @@ class Canvas {
 		static size_t unique_identifier;
 		static TileBuffer tile_copy_buffer;
 		static std::unique_ptr<TileViewer> viewer_copy;
+		static std::unique_ptr<TileViewer> tile_viewer;
 
 		static uint8_t selected_color;
 

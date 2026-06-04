@@ -34,4 +34,8 @@ constexpr Palette default_palette = {
 	0xff000000,
 };
 
+#define PALETTE_GET_R(x) (((x) >> 16) & 0xff)
+#define PALETTE_GET_G(x) (((x) >> 8) & 0xff)
+#define PALETTE_GET_B(x) (((x)) & 0xff)
+
 #endif

@@ -70,9 +70,8 @@ App::App(void) {
 	ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
 	ImGui_ImplSDLRenderer2_Init(renderer);
 
-	tile_viewer = TileViewer::create(renderer);
-	canvas_list.push_back(Canvas::create(renderer, "tools/roms/smb_og.nes"));
-	canvas_list.push_back(Canvas::create(renderer, "tools/roms/dk.nes"));
+	canvas_list.loadCanvas(renderer, "tools/roms/smb_og.nes");
+	canvas_list.loadCanvas(renderer, "tools/roms/dk.nes");
 
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 }
@@ -95,7 +94,7 @@ App::~App(void) {
 }
 
 bool App::isAnyCanvasOnFocus(void) const {
-	return is_any_canvas_on_focus;
+	return canvas_list.isAnyCanvasOnFocus();
 }
 
 void App::loop(void) {
@@ -120,9 +119,17 @@ void App::loop(void) {
 	ImGui::DockSpaceOverViewport();
 
 	renderMenubar();
-	renderCanvasList();
 
 	toolbar.render();
+	canvas_list.render(*this, renderer);
+
+	{
+		Canvas *last_canvas = canvas_list.getLastActiveCanvas();
+
+		palette_menu.render(
+				(last_canvas == nullptr) ? nullptr : &last_canvas->getRomData()
+				);
+	}
 
 	endRender();
 
@@ -161,30 +168,6 @@ void App::renderMenubar(void) {
 		ImGui::EndMainMenuBar();
 
 	}
-}
-
-void App::renderCanvasList(void) {
-	bool next_is_any_canvas_on_focus = false;
-
-	for(auto& canvas : canvas_list) {
-		canvas->renderFramebuffer(renderer, *tile_viewer);
-		canvas->drawCanvasWindow(*this);
-
-		next_is_any_canvas_on_focus |= canvas->isOnFocus();
-	}
-
-	canvas_list.erase(
-			std::remove_if(
-				canvas_list.begin(),
-				canvas_list.end(),
-				[](const std::unique_ptr<Canvas>& canvas) {
-					return !canvas->isOpen();
-				}
-				),
-			canvas_list.end()
-			);
-
-	is_any_canvas_on_focus = next_is_any_canvas_on_focus;
 }
 
 void App::handleInput(void) {

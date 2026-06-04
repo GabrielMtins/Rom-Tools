@@ -28,3 +28,7 @@ void RomData::setViewerFormat(Rom_Format format) {
 			data.size()
 			);
 }
+
+size_t RomData::getMaxColors(void) {
+	return Rom_GetFormatMaxColors(viewer.format);
+}

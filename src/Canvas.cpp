@@ -11,6 +11,7 @@
 size_t Canvas::unique_identifier = 0;
 TileBuffer Canvas::tile_copy_buffer;
 std::unique_ptr<TileViewer> Canvas::viewer_copy = nullptr;
+std::unique_ptr<TileViewer> Canvas::tile_viewer = nullptr;
 uint8_t Canvas::selected_color = 0;
 Canvas::Tool Canvas::tool = Canvas::TOOL_SELECT;
 Canvas::Tool Canvas::old_tool = Canvas::TOOL_SELECT;
@@ -42,13 +43,15 @@ std::unique_ptr<Canvas> Canvas::create(SDL_Renderer *renderer, const std::string
 		viewer_copy = TileViewer::create(renderer);
 	}
 
+	if(tile_viewer == nullptr) {
+		tile_viewer = TileViewer::create(renderer);
+	}
+
 	return canvas;
 }
 
-void Canvas::renderFramebuffer(SDL_Renderer *renderer, TileViewer& tile_viewer) {
-	if(is_on_focus) {
-		renderToTexture(renderer, tile_viewer);
-	}
+void Canvas::renderFramebuffer(SDL_Renderer *renderer) {
+	renderToTexture(renderer);
 }
 
 void Canvas::setTool(Tool new_tool) {
@@ -63,6 +66,14 @@ Canvas::Tool Canvas::getTool(void) {
 	return tool;
 }
 
+uint8_t Canvas::getSelectedColor(void) {
+	return selected_color;
+}
+
+void Canvas::setSelectedColor(uint8_t new_selected_color) {
+	Canvas::selected_color = new_selected_color;
+}
+
 bool Canvas::isOpen(void) const {
 	return open;
 }
@@ -71,22 +82,26 @@ bool Canvas::isOnFocus(void) const {
 	return is_on_focus;
 }
 
-void Canvas::renderToTexture(SDL_Renderer *renderer, TileViewer& tile_viewer) {
+RomData& Canvas::getRomData(void) {
+	return rom;
+}
+
+void Canvas::renderToTexture(SDL_Renderer *renderer) {
 	SDL_Rect src;
 
-	tile_viewer.draw(
+	tile_viewer->draw(
 			rom.viewer,
 			rom.palette,
 			offset_tiles_y
 			);
 
-	renderToolLine(tile_viewer);
+	renderToolLine();
 
 	SDL_SetRenderTarget(renderer, texture);
 
 	src = computeSrcRect();
 
-	SDL_RenderCopy(renderer, tile_viewer.getTexture(), &src, NULL);
+	SDL_RenderCopy(renderer, tile_viewer->getTexture(), &src, NULL);
 
 	renderPaste(renderer);
 	renderToolRect(renderer);
@@ -219,12 +234,12 @@ void Canvas::renderToolRect(SDL_Renderer *renderer) {
 	SDL_RenderFillRect(renderer, &dst);
 }
 
-void Canvas::renderToolLine(TileViewer& tile_viewer) {
+void Canvas::renderToolLine(void) {
 	if(!tools.line.active) {
 		return;
 	}
 
-	tile_viewer.drawLine(
+	tile_viewer->drawLine(
 			tools.line.start_x,
 			tools.line.start_y - offset_tiles_y * TileViewer::TILE_SIZE,
 			tools.line.end_x,
@@ -398,19 +413,6 @@ void Canvas::handleInput(void) {
 	}
 
 	offset_tiles_x += int(-ImGui::GetIO().MouseWheelH);
-
-	if(ImGui::IsKeyPressed(ImGuiKey_1)) {
-		selected_color = 0;
-	}
-	if(ImGui::IsKeyPressed(ImGuiKey_2)) {
-		selected_color = 1;
-	}
-	if(ImGui::IsKeyPressed(ImGuiKey_3)) {
-		selected_color = 2;
-	}
-	if(ImGui::IsKeyPressed(ImGuiKey_4)) {
-		selected_color = 3;
-	}
 
 	if(ImGui::IsKeyPressed(ImGuiKey_Escape)) {
 		tools.select.selected = false;
@@ -605,6 +607,7 @@ void Canvas::handleInputPaste(void) {
 		undo_system.endAction(rom.viewer);
 
 		image_input_type = IMAGE_INPUT_TOOL;
+		wait_for_mouse_button_release = true;
 	}
 }
 

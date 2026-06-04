@@ -11,6 +11,8 @@
 
 #include "TileBuffer.hpp"
 #include "Toolbar.hpp"
+#include "PaletteMenu.hpp"
+#include "CanvasList.hpp"
 
 class App {
 	public:
@@ -23,7 +25,6 @@ class App {
 	private:
 		void loop(void);
 		void renderMenubar(void);
-		void renderCanvasList(void);
 		void handleInput(void);
 		void beginRender(void);
 		void endRender(void);
@@ -32,11 +33,9 @@ class App {
 		SDL_Renderer *renderer = NULL;
 		bool quit = false;
 
-		std::unique_ptr<TileViewer> tile_viewer;
-		std::vector<std::unique_ptr<Canvas>> canvas_list;
-
+		CanvasList canvas_list;
 		Toolbar toolbar;
-		bool is_any_canvas_on_focus = false;
+		PaletteMenu palette_menu;
 
 		static constexpr uint32_t MIN_TIME_FRAME = 16;
 };
