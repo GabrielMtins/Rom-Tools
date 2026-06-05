@@ -11,6 +11,8 @@ class Toolbar {
 		void renderIcons(void);
 		void renderPaletteColors(Canvas *active_canvas);
 		bool renderCurrentColors(uint32_t fg_color, uint32_t bg_color);
+
+		float tool_icons_width = 0.0f;
 };
 
 #endif

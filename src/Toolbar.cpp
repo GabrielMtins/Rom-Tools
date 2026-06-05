@@ -36,7 +36,15 @@ void Toolbar::renderPaletteColors(Canvas *active_canvas) {
 
 void Toolbar::renderIcons(void) {
 	static constexpr ImVec2 button_dim(36.0f, 36.0f);
-	ImVec2 available_area;
+	ImVec2 available_area =  ImGui::GetContentRegionAvail();
+
+	float offset_x = (available_area.x - tool_icons_width) * 0.5f;
+
+	if(offset_x < 0.0f) offset_x = 0.0f;
+
+	ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset_x);
+
+	ImGui::BeginGroup();
 
 	for(size_t i = 0; i < Canvas::NUM_TOOLS; i++) {
 		bool is_selected = (Canvas::getTool() == i);
@@ -58,8 +66,11 @@ void Toolbar::renderIcons(void) {
 				ImGui::NewLine();
 			}
 		}
-
 	}
+
+	ImGui::EndGroup();
+
+	tool_icons_width = ImGui::GetItemRectSize().x;
 }
 
 bool Toolbar::renderCurrentColors(uint32_t fg_color, uint32_t bg_color) {
