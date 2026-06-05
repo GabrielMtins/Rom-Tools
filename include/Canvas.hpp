@@ -24,8 +24,6 @@ class Canvas {
 		void drawCanvasWindow(const App& app);
 		static void setTool(Tool new_tool);
 		static Tool getTool(void);
-		static uint8_t getSelectedColor(void);
-		static void setSelectedColor(uint8_t new_selected_color);
 
 		bool isOpen(void) const;
 		bool isOnFocus(void) const;
@@ -59,6 +57,7 @@ class Canvas {
 		SDL_Rect computeSrcRect(void) const;
 
 		void handleInput(void);
+		void resetTools(void);
 		void handleClickImage(const App& app);
 
 		void handleToolBrush(void);
@@ -67,7 +66,7 @@ class Canvas {
 		void handleToolInvert(void);
 		void handleToolRect(void);
 		void handleToolLine(void);
-		void resetTools(void);
+		void handleToolPicker(void);
 
 		void handleInputPaste(void);
 		void handleInputMove(void);
@@ -95,6 +94,9 @@ class Canvas {
 		void copyFromViewerToBuffer(int x, int y, int w, int h, TileBuffer& buffer) const;
 		void copyFromBufferToViewer(int x, int y, const TileBuffer& buffer);
 		PixelTile convertToPixelTile(int x, int y) const;
+
+		void setDrawColorByMouseButton(void);
+		static bool areMouseButtonsUp(void); 
 
 		RomData rom;
 		UndoSystem undo_system;
@@ -131,7 +133,7 @@ class Canvas {
 				SDL_Rect px_rect;
 				int start_x, start_y;
 				int end_x, end_y;
-				bool selected = false;
+				bool active = false;
 			} rect;
 
 			struct {
@@ -158,7 +160,9 @@ class Canvas {
 		static std::unique_ptr<TileViewer> viewer_copy;
 		static std::unique_ptr<TileViewer> tile_viewer;
 
-		static uint8_t selected_color;
+		uint8_t selected_color_fg = 0;
+		uint8_t selected_color_bg = 1;
+		uint8_t draw_color = 0;
 
 		static Tool tool;
 		static Tool old_tool;

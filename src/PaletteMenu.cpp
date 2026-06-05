@@ -33,9 +33,11 @@ void PaletteMenu::render(RomData *rom_data) {
 	ImGui::Text("NES Palette");
 	uint32_t selected = drawMainPalette();
 
+	/*
 	if(rom_data != nullptr && selected > 0) {
 		rom_data->palette[Canvas::getSelectedColor()] = famicom_palette[selected - 1];
 	} 
+	*/
 
 	ImGui::End();
 }
@@ -57,22 +59,26 @@ void PaletteMenu::drawPaletteRects(const Palette& palette, size_t num_colors) {
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, current_color);
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, current_color);
 
+		/*
 		if(i == Canvas::getSelectedColor()) {
 			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1, 1, 1, 1));
 		} else {
 			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
 		}
+		*/
 
 		bool clicked = ImGui::Button(
 				("##color" + std::to_string(i)).c_str(),
 				button_size
 				);
 
+		/*
 		if(clicked) {
 			Canvas::setSelectedColor(i);
 		}
+		*/
 
-		ImGui::PopStyleColor(4);
+		ImGui::PopStyleColor(3);
 
 		if(i + 1 < num_colors) {
 			ImGui::SameLine();

@@ -12,7 +12,6 @@ size_t Canvas::unique_identifier = 0;
 TileBuffer Canvas::tile_copy_buffer;
 std::unique_ptr<TileViewer> Canvas::viewer_copy = nullptr;
 std::unique_ptr<TileViewer> Canvas::tile_viewer = nullptr;
-uint8_t Canvas::selected_color = 0;
 Canvas::Tool Canvas::tool = Canvas::TOOL_SELECT;
 Canvas::Tool Canvas::old_tool = Canvas::TOOL_SELECT;
 
@@ -64,14 +63,6 @@ void Canvas::setTool(Tool new_tool) {
 
 Canvas::Tool Canvas::getTool(void) {
 	return tool;
-}
-
-uint8_t Canvas::getSelectedColor(void) {
-	return selected_color;
-}
-
-void Canvas::setSelectedColor(uint8_t new_selected_color) {
-	Canvas::selected_color = new_selected_color;
 }
 
 bool Canvas::isOpen(void) const {
@@ -210,15 +201,15 @@ void Canvas::renderPaste(SDL_Renderer *renderer) {
 }
 
 void Canvas::renderToolRect(SDL_Renderer *renderer) {
-	if(!tools.rect.selected) {
+	if(!tools.rect.active) {
 		return;
 	}
 
 	uint8_t r, g, b;
 
-	r = (rom.palette.at(selected_color) >> 16) & 0xff;
-	g = (rom.palette.at(selected_color) >> 8) & 0xff;
-	b = (rom.palette.at(selected_color)) & 0xff;
+	r = PALETTE_GET_R(rom.palette[draw_color]);
+	g = PALETTE_GET_G(rom.palette[draw_color]);
+	b = PALETTE_GET_B(rom.palette[draw_color]);
 
 	SDL_Rect dst = tools.rect.px_rect;
 
@@ -244,7 +235,7 @@ void Canvas::renderToolLine(void) {
 			tools.line.start_y - offset_tiles_y * TileViewer::TILE_SIZE,
 			tools.line.end_x,
 			tools.line.end_y - offset_tiles_y * TileViewer::TILE_SIZE,
-			rom.palette.at(selected_color)
+			rom.palette[draw_color]
 			);
 }
 
@@ -427,6 +418,21 @@ void Canvas::handleInput(void) {
 	}
 }
 
+void Canvas::resetTools(void) {
+	if(tools.brush.active && tool != TOOL_BRUSH) {
+		tools.brush.active = false;
+		undo_system.endAction(rom.viewer);
+	}
+
+	if(tools.line.active && tool != TOOL_LINE) {
+		tools.line.active = false;
+	}
+
+	if(tools.rect.active && tool != TOOL_RECT) {
+		tools.rect.active = false;
+	}
+}
+
 void Canvas::handleClickImage(const App& app) {
 	if(!ImGui::IsItemHovered()) {
 		window_flags = 0;
@@ -459,6 +465,8 @@ void Canvas::handleClickImage(const App& app) {
 			break;
 	}
 
+	resetTools();
+
 	window_flags = ImGuiWindowFlags_NoMove;
 
 	switch(tool) {
@@ -472,7 +480,7 @@ void Canvas::handleClickImage(const App& app) {
 void Canvas::handleToolBrush(void) {
 	ImVec2 pos = getIntegerPositionOnViewer();
 
-	if(!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+	if(areMouseButtonsUp()) {
 		if(!tools.brush.active) return;
 
 		tools.brush.active = false;
@@ -487,6 +495,8 @@ void Canvas::handleToolBrush(void) {
 		tools.brush.old_x = pos.x;
 		tools.brush.old_y = pos.y;
 
+		setDrawColorByMouseButton();
+
 		return;
 	}
 
@@ -495,7 +505,7 @@ void Canvas::handleToolBrush(void) {
 			tools.brush.old_y,
 			pos.x,
 			pos.y,
-			selected_color,
+			draw_color,
 			true
 			);
 
@@ -538,15 +548,16 @@ void Canvas::handleToolSelect(void) {
 }
 
 void Canvas::handleToolBucket(void) {
-	if(!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+	if(areMouseButtonsUp()) {
 		return;
 	}
 	
 	bool fill_all = ImGui::IsKeyDown(ImGuiKey_LeftShift);
+	setDrawColorByMouseButton();
 
 	if(fill_all) {
 		undo_system.beginAction();
-		floodVisible(selected_color, true);
+		floodVisible(draw_color, true);
 		undo_system.endAction(rom.viewer);
 
 		return;
@@ -555,7 +566,7 @@ void Canvas::handleToolBucket(void) {
 	ImVec2 pos = getIntegerPositionOnViewer();
 
 	undo_system.beginAction();
-	floodFill(pos.x, pos.y, selected_color, true);
+	floodFill(pos.x, pos.y, draw_color, true);
 	undo_system.endAction(rom.viewer);
 }
 
@@ -614,8 +625,8 @@ void Canvas::handleInputPaste(void) {
 void Canvas::handleToolRect(void) {
 	ImVec2 pos = getIntegerPositionOnViewer();
 
-	if(!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-		if(!tools.rect.selected) {
+	if(areMouseButtonsUp()) {
+		if(!tools.rect.active) {
 			return;
 		}
 
@@ -628,7 +639,7 @@ void Canvas::handleToolRect(void) {
 				putPixel(
 						rect.x + i,
 						rect.y + j,
-						selected_color,
+						draw_color,
 						true
 						);
 			}
@@ -636,14 +647,15 @@ void Canvas::handleToolRect(void) {
 
 		undo_system.endAction(rom.viewer);
 
-		tools.rect.selected = false;
+		tools.rect.active = false;
 		return;
 	}
 
-	if(!tools.rect.selected) {
+	if(!tools.rect.active) {
 		tools.rect.start_x = pos.x;
 		tools.rect.start_y = pos.y;
-		tools.rect.selected = true;
+		tools.rect.active = true;
+		setDrawColorByMouseButton();
 	}
 
 	tools.rect.end_x = pos.x;
@@ -672,7 +684,7 @@ void Canvas::handleToolRect(void) {
 void Canvas::handleToolLine(void) {
 	ImVec2 pos = getIntegerPositionOnViewer();
 
-	if(!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+	if(areMouseButtonsUp()) {
 		if(!tools.line.active) return;
 
 		tools.line.active = false;
@@ -684,7 +696,7 @@ void Canvas::handleToolLine(void) {
 				tools.line.start_y,
 				tools.line.end_x,
 				tools.line.end_y,
-				selected_color
+				draw_color
 				);
 
 		undo_system.endAction(rom.viewer);
@@ -695,6 +707,8 @@ void Canvas::handleToolLine(void) {
 		tools.line.start_x = pos.x;
 		tools.line.start_y = pos.y;
 		tools.line.active = true;
+
+		setDrawColorByMouseButton();
 	}
 
 	tools.line.end_x = pos.x;
@@ -722,6 +736,23 @@ void Canvas::handleToolLine(void) {
 
 			}
 		}
+	}
+}
+
+void Canvas::handleToolPicker(void) {
+	if(areMouseButtonsUp()) {
+		return;
+	}
+
+	ImVec2 pos = getIntegerPositionOnViewer();
+	uint8_t c = getPixel(pos.x, pos.y);
+
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+		selected_color_fg = c;
+	}
+
+	if(ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+		selected_color_bg = c;
 	}
 }
 
@@ -1044,6 +1075,20 @@ Canvas::PixelTile Canvas::convertToPixelTile(int x, int y) const {
 		x % TileViewer::TILE_SIZE,
 		y % TileViewer::TILE_SIZE
 	};
+}
+
+void Canvas::setDrawColorByMouseButton(void) {
+	if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+		draw_color = selected_color_fg;
+	} else {
+		draw_color = selected_color_bg;
+	}
+}
+
+bool Canvas::areMouseButtonsUp(void) {
+	return 
+		!ImGui::IsMouseDown(ImGuiMouseButton_Left) &&
+		!ImGui::IsMouseDown(ImGuiMouseButton_Right);
 }
 
 Canvas::~Canvas(void) {

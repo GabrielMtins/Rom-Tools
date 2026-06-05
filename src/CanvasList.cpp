@@ -55,6 +55,7 @@ bool CanvasList::isAnyCanvasOnFocus(void) const {
 }
 
 void CanvasList::handleInput(void) {
+	/*
 	if(ImGui::IsKeyPressed(ImGuiKey_1)) {
 		Canvas::setSelectedColor(0);
 	}
@@ -67,6 +68,7 @@ void CanvasList::handleInput(void) {
 	if(ImGui::IsKeyPressed(ImGuiKey_4)) {
 		Canvas::setSelectedColor(3);
 	}
+	*/
 }
 
 void CanvasList::cleanUp(void) {

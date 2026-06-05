@@ -2,12 +2,13 @@
 #define TOOL_HPP
 
 #define FOR_TOOL_LIST(DO) \
-	DO(TOOL_SELECT,   handleToolSelect,   ImGuiKey_V,     "\uf245") \
-	DO(TOOL_BRUSH,    handleToolBrush,    ImGuiKey_B,     "\uf304") \
-	DO(TOOL_BUCKET,   handleToolBucket,   ImGuiKey_F,     "\uf576") \
-	DO(TOOL_INVERT,   handleToolInvert,   ImGuiKey_T,     "\uf07e") \
-	DO(TOOL_RECT,     handleToolRect,     ImGuiKey_R,     "\uf0c8") \
-	DO(TOOL_LINE,     handleToolLine,     ImGuiKey_Q,     "\uf5ad") 
+	DO(TOOL_SELECT,   handleToolSelect,   ImGuiKey_V,   "\uf245") \
+	DO(TOOL_BRUSH,    handleToolBrush,    ImGuiKey_B,   "\uf304") \
+	DO(TOOL_PICKER,   handleToolPicker,   ImGuiKey_I,   "\uf1fb") \
+	DO(TOOL_BUCKET,   handleToolBucket,   ImGuiKey_F,   "\uf576") \
+	DO(TOOL_INVERT,   handleToolInvert,   ImGuiKey_T,   "\uf07e") \
+	DO(TOOL_RECT,     handleToolRect,     ImGuiKey_R,   "\uf0c8") \
+	DO(TOOL_LINE,     handleToolLine,     ImGuiKey_Q,   "\uf5ad") 
 
 #define TOOL_LIST_EXPAND_AS_ENUM(type, ...) \
 	type,
