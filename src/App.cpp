@@ -56,8 +56,6 @@ App::App(void) {
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-	ImGui::StyleColorsDark();
-
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.ScaleAllSizes(main_scale);
 	style.FontScaleDpi = main_scale;
@@ -65,6 +63,9 @@ App::App(void) {
 	Style::setUpFonts();
 	//Style::setUpDarkTheme();
 	//Style::setUpPaperAndInkStyle();
+	//Style::setUpDraculaTheme();
+	//Style::setUpCrimsonTheme();
+	//Style::setUpCyberpunkTheme();
 	Style::setUpCatppuccinStyle();
 
 	ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);

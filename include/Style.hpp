@@ -6,8 +6,10 @@ namespace Style {
 
 	void setUpPaperAndInkStyle(void);
 	void setUpDarkTheme(void);
+	void setUpDraculaTheme(void);
+	void setUpCrimsonTheme(void);
+	void setUpCyberpunkTheme(void);
 	void setUpCatppuccinStyle(void);
-	void setUpPabloDark(void);
 };
 
 #endif
