@@ -4,13 +4,14 @@
 #include "Palette.hpp"
 #include "imgui.h"
 #include "RomData.hpp"
+#include "Canvas.hpp"
 
 class PaletteMenu {
 	public:
-		void render(RomData *rom_data);
+		void render(Canvas& canvas);
 
 	private:
-		void drawPaletteRects(const Palette& palette, size_t num_colors);
+		void drawPaletteRects(Canvas& canvas, const Palette& palette, size_t num_colors);
 		uint32_t drawMainPalette(void);
 
 		static ImVec4 getVec4Color(uint32_t color);

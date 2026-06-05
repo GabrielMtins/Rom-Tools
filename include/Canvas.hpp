@@ -25,6 +25,13 @@ class Canvas {
 		static void setTool(Tool new_tool);
 		static Tool getTool(void);
 
+		void selectColorFg(uint8_t color);
+		void selectColorBg(uint8_t color);
+		void swapColorsBgFg(void);
+
+		uint8_t getColorFg(void) const;
+		uint8_t getColorBg(void) const;
+
 		bool isOpen(void) const;
 		bool isOnFocus(void) const;
 

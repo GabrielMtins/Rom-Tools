@@ -62,11 +62,11 @@ App::App(void) {
 
 	Style::setUpFonts();
 	//Style::setUpDarkTheme();
-	//Style::setUpPaperAndInkStyle();
+	Style::setUpPaperAndInkStyle();
 	//Style::setUpDraculaTheme();
 	//Style::setUpCrimsonTheme();
 	//Style::setUpCyberpunkTheme();
-	Style::setUpCatppuccinStyle();
+	//Style::setUpCatppuccinStyle();
 
 	ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
 	ImGui_ImplSDLRenderer2_Init(renderer);
@@ -121,16 +121,15 @@ void App::loop(void) {
 
 	renderMenubar();
 
-	toolbar.render();
 	canvas_list.render(*this, renderer);
 
-	{
-		Canvas *last_canvas = canvas_list.getLastActiveCanvas();
+	Canvas *last_canvas = canvas_list.getLastActiveCanvas();
 
-		palette_menu.render(
-				(last_canvas == nullptr) ? nullptr : &last_canvas->getRomData()
-				);
+	if(last_canvas) {
+		palette_menu.render(*last_canvas);
 	}
+
+	toolbar.render(last_canvas);
 
 	endRender();
 

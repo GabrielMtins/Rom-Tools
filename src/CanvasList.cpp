@@ -55,20 +55,13 @@ bool CanvasList::isAnyCanvasOnFocus(void) const {
 }
 
 void CanvasList::handleInput(void) {
-	/*
-	if(ImGui::IsKeyPressed(ImGuiKey_1)) {
-		Canvas::setSelectedColor(0);
+	Canvas *active_canvas = getLastActiveCanvas();
+
+	if(!active_canvas) return;
+
+	if(ImGui::IsKeyPressed(ImGuiKey_X)) {
+		active_canvas->swapColorsBgFg();
 	}
-	if(ImGui::IsKeyPressed(ImGuiKey_2)) {
-		Canvas::setSelectedColor(1);
-	}
-	if(ImGui::IsKeyPressed(ImGuiKey_3)) {
-		Canvas::setSelectedColor(2);
-	}
-	if(ImGui::IsKeyPressed(ImGuiKey_4)) {
-		Canvas::setSelectedColor(3);
-	}
-	*/
 }
 
 void CanvasList::cleanUp(void) {

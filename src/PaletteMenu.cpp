@@ -17,77 +17,58 @@ static constexpr std::array<uint32_t, FAMICOM_PALETTE_SIZE> famicom_palette = {
 	0xFFF8D878, 0xFFD8F878, 0xFFB8F8B8, 0xFFB8F8D8, 0xFF00FCFC, 0xFFD8D8D8, 0xFF000000, 0xFF000000
 };
 
-void PaletteMenu::render(RomData *rom_data) {
+void PaletteMenu::render(Canvas& canvas) {
 	ImGui::Begin("Palette Menu", &open);
 	ImGui::Text("User Palette");
 
-	if(rom_data != nullptr) {
-		drawPaletteRects(
-				rom_data->palette,
-				rom_data->getMaxColors()
-				);
-	} 
+	drawPaletteRects(
+			canvas,
+			canvas.getRomData().palette,
+			canvas.getRomData().getMaxColors()
+			);
 
 	ImGui::Separator();
 
 	ImGui::Text("NES Palette");
 	uint32_t selected = drawMainPalette();
 
-	/*
-	if(rom_data != nullptr && selected > 0) {
-		rom_data->palette[Canvas::getSelectedColor()] = famicom_palette[selected - 1];
-	} 
-	*/
 
 	ImGui::End();
 }
 
-void PaletteMenu::drawPaletteRects(const Palette& palette, size_t num_colors) {
-	static constexpr ImVec2 button_size(48, 48);
+void PaletteMenu::drawPaletteRects(Canvas& canvas, const Palette& palette, size_t num_colors) {
+	static constexpr ImVec2 rect_size(48, 48);
 
 	ImGui::BeginGroup();
 
-	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(2, 2));
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2);
-	ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
+	ImDrawList *draw_list = ImGui::GetWindowDrawList();
+	ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
 
 	for(size_t i = 0; i < num_colors; i++) {
-		ImVec4 current_color = getVec4Color(palette[i]);
+		ImVec2 rect_min = ImVec2(cursor_pos.x + (i * rect_size.x), cursor_pos.y);
+		ImVec2 rect_max = ImVec2(rect_min.x + rect_size.x, rect_min.y + rect_size.y);
 
-		ImGui::PushStyleColor(ImGuiCol_Button, current_color);
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, current_color);
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, current_color);
+		uint32_t raw_color = palette[i];
+		ImU32 current_color = IM_COL32(
+			PALETTE_GET_R(raw_color),
+			PALETTE_GET_G(raw_color),
+			PALETTE_GET_B(raw_color),
+			255
+		);
 
-		/*
-		if(i == Canvas::getSelectedColor()) {
-			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1, 1, 1, 1));
-		} else {
-			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
+		draw_list->AddRectFilled(rect_min, rect_max, current_color);
+
+		if(ImGui::IsMouseHoveringRect(rect_min, rect_max)) {
+			if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+				canvas.selectColorFg(i);
+			} else if(ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
+				canvas.selectColorBg(i);
+			}
 		}
-		*/
-
-		bool clicked = ImGui::Button(
-				("##color" + std::to_string(i)).c_str(),
-				button_size
-				);
-
-		/*
-		if(clicked) {
-			Canvas::setSelectedColor(i);
-		}
-		*/
-
-		ImGui::PopStyleColor(3);
-
-		if(i + 1 < num_colors) {
-			ImGui::SameLine();
-		}
-
-		(void) clicked;
 	}
 
-	ImGui::PopStyleVar(4);
+
+	ImGui::Dummy(ImVec2(rect_size.x * num_colors, rect_size.y));
 
 	ImGui::EndGroup();
 }

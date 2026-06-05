@@ -65,6 +65,26 @@ Canvas::Tool Canvas::getTool(void) {
 	return tool;
 }
 
+void Canvas::selectColorFg(uint8_t color) {
+	selected_color_fg = color;
+}
+
+void Canvas::selectColorBg(uint8_t color) {
+	selected_color_bg = color;
+}
+
+void Canvas::swapColorsBgFg(void) {
+	std::swap(selected_color_fg, selected_color_bg);
+}
+
+uint8_t Canvas::getColorFg(void) const {
+	return selected_color_fg;
+}
+
+uint8_t Canvas::getColorBg(void) const {
+	return selected_color_bg;
+}
+
 bool Canvas::isOpen(void) const {
 	return open;
 }
@@ -488,6 +508,18 @@ void Canvas::handleToolBrush(void) {
 		return;
 	}
 
+	if(ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && !tools.brush.active) {
+		uint8_t color = getPixel(pos.x, pos.y);
+
+		if(ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+			selected_color_fg = color;
+		} else {
+			selected_color_bg = color;
+		}
+
+		return;
+	}
+
 	if(!tools.brush.active) {
 		tools.brush.active = true;
 
@@ -496,8 +528,6 @@ void Canvas::handleToolBrush(void) {
 		tools.brush.old_y = pos.y;
 
 		setDrawColorByMouseButton();
-
-		return;
 	}
 
 	bresenhamLine(
