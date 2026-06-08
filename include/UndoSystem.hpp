@@ -25,6 +25,7 @@ class UndoSystem {
 		void addTile(const Rom_Viewer& viewer, size_t tile_index);
 		void undoAction(Rom_Viewer& viewer);
 		void redoAction(Rom_Viewer& viewer);
+		bool isOnAction(void) const;
 
 	private:
 		bool isTileOnStack(size_t tile_index) const;

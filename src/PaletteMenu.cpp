@@ -19,7 +19,7 @@ static constexpr std::array<uint32_t, FAMICOM_PALETTE_SIZE> famicom_palette = {
 
 void PaletteMenu::render(Canvas& canvas) {
 	ImGui::Begin("Palette Menu", &open);
-	ImGui::Text("User Palette");
+	ImGui::Text("ROM Palette");
 
 	drawPaletteRects(
 			canvas,
@@ -29,9 +29,16 @@ void PaletteMenu::render(Canvas& canvas) {
 
 	ImGui::Separator();
 
+	drawColorPicker(canvas);
+
+	ImGui::Separator();
+
 	ImGui::Text("NES Palette");
 	uint32_t selected = drawMainPalette();
 
+	if(selected) {
+		canvas.getRomData().palette[canvas.getColorFg()] = famicom_palette[selected - 1];
+	}
 
 	ImGui::End();
 }
@@ -41,34 +48,43 @@ void PaletteMenu::drawPaletteRects(Canvas& canvas, const Palette& palette, size_
 
 	ImGui::BeginGroup();
 
-	ImDrawList *draw_list = ImGui::GetWindowDrawList();
-	ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 2));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 4);
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
 
 	for(size_t i = 0; i < num_colors; i++) {
-		ImVec2 rect_min = ImVec2(cursor_pos.x + (i * rect_size.x), cursor_pos.y);
-		ImVec2 rect_max = ImVec2(rect_min.x + rect_size.x, rect_min.y + rect_size.y);
+		ImVec4 current_color = getVec4Color(palette[i]);
 
-		uint32_t raw_color = palette[i];
-		ImU32 current_color = IM_COL32(
-			PALETTE_GET_R(raw_color),
-			PALETTE_GET_G(raw_color),
-			PALETTE_GET_B(raw_color),
-			255
-		);
+		if(i == canvas.getColorFg()) {
+			ImGui::PushStyleColor(ImGuiCol_Border, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+		} else {
+			//ImGui::PushStyleColor(ImGuiCol_Button, getDimmedColor(current_color));
+			ImGui::PushStyleColor(ImGuiCol_Border, ImGui::GetStyleColorVec4(ImGuiCol_Button));
+		}
 
-		draw_list->AddRectFilled(rect_min, rect_max, current_color);
+		ImGui::PushStyleColor(ImGuiCol_Button, current_color);
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, current_color);
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, current_color);
 
-		if(ImGui::IsMouseHoveringRect(rect_min, rect_max)) {
-			if(ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
-				canvas.selectColorFg(i);
-			} else if(ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
-				canvas.selectColorBg(i);
-			}
+		bool clicked = ImGui::Button(
+				("##romcolor" + std::to_string(i)).c_str(),
+				rect_size
+				);
+
+		if(clicked) {
+			canvas.selectColorFg(i);
+		}
+
+		ImGui::PopStyleColor(4);
+
+		if(i + 1 < num_colors) {
+			ImGui::SameLine();
 		}
 	}
 
+	ImGui::PopStyleVar(4);
 
-	ImGui::Dummy(ImVec2(rect_size.x * num_colors, rect_size.y));
 
 	ImGui::EndGroup();
 }
@@ -116,6 +132,22 @@ uint32_t PaletteMenu::drawMainPalette(void) {
 	ImGui::EndGroup();
 
 	return selected;
+}
+
+void PaletteMenu::drawColorPicker(Canvas& canvas) {
+	ImGui::Text("Color Picker (Foreground Color)");
+
+	uint32_t& color = canvas.getRomData().palette[canvas.getColorFg()];
+
+	fg_color[0] = float(PALETTE_GET_R(color)) / 255.0f;
+	fg_color[1] = float(PALETTE_GET_G(color)) / 255.0f;
+	fg_color[2] = float(PALETTE_GET_B(color)) / 255.0f;
+
+	ImGui::ColorPicker3("##oi", fg_color);
+
+	PALETTE_SET_R(color, fg_color[0] * 255.0f);
+	PALETTE_SET_G(color, fg_color[1] * 255.0f);
+	PALETTE_SET_B(color, fg_color[2] * 255.0f);
 }
 
 ImVec4 PaletteMenu::getVec4Color(uint32_t color) {

@@ -38,4 +38,8 @@ constexpr Palette default_palette = {
 #define PALETTE_GET_G(x) (((x) >> 8) & 0xff)
 #define PALETTE_GET_B(x) (((x)) & 0xff)
 
+#define PALETTE_SET_R(x, c) (x = (((x) & 0xff00ffff) | ((uint32_t(c)) << 16)))
+#define PALETTE_SET_G(x, c) (x = (((x) & 0xffff00ff) | ((uint32_t(c)) << 8)))
+#define PALETTE_SET_B(x, c) (x = (((x) & 0xffffff00) | ((uint32_t(c)) << 0)))
+
 #endif

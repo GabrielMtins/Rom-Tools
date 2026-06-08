@@ -71,6 +71,10 @@ void UndoSystem::addTile(const Rom_Viewer& viewer, size_t tile_index) {
 }
 
 void UndoSystem::undoAction(Rom_Viewer& viewer) {
+	if(action) {
+		return;
+	}
+
 	if(undo_stack.size() == history.num_actions) {
 		return;
 	}
@@ -93,6 +97,10 @@ void UndoSystem::undoAction(Rom_Viewer& viewer) {
 }
 
 void UndoSystem::redoAction(Rom_Viewer& viewer) {
+	if(action) {
+		return;
+	}
+
 	if(history.num_actions == 0) {
 		return;
 	}
@@ -110,6 +118,10 @@ void UndoSystem::redoAction(Rom_Viewer& viewer) {
 				);
 	}
 
+}
+
+bool UndoSystem::isOnAction(void) const {
+	return action;
 }
 
 bool UndoSystem::isTileOnStack(size_t tile_index) const {
