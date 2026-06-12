@@ -62,19 +62,22 @@ App::App(void) {
 
 	Style::setUpFonts();
 	//Style::setUpDarkTheme();
-	Style::setUpPaperAndInkStyle();
+	//Style::setUpPaperAndInkStyle();
 	//Style::setUpDraculaTheme();
 	//Style::setUpCrimsonTheme();
 	//Style::setUpCyberpunkTheme();
-	//Style::setUpCatppuccinStyle();
+	Style::setUpCatppuccinStyle();
 
 	ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
 	ImGui_ImplSDLRenderer2_Init(renderer);
 
 	canvas_list.loadCanvas(renderer, "tools/roms/smb_og.nes");
 	canvas_list.loadCanvas(renderer, "tools/roms/dk.nes");
+	canvas_list.loadCanvas(renderer, "tools/roms/sml2.gb");
 
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+	palette_menu = PaletteMenu::create(renderer);
 }
 
 void App::run(void) {
@@ -126,7 +129,8 @@ void App::loop(void) {
 	Canvas *last_canvas = canvas_list.getLastActiveCanvas();
 
 	if(last_canvas) {
-		palette_menu.render(*last_canvas);
+		palette_menu->drawPaleteTexture(*last_canvas, renderer);
+		palette_menu->render(*last_canvas);
 	}
 
 	toolbar.render(last_canvas);

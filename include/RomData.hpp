@@ -18,6 +18,8 @@ struct RomData {
 	bool load(const std::string& filename);
 	void setViewerFormat(Rom_Format format);
 	size_t getMaxColors(void);
+
+	Rom_Format getExpectedFormat(void);
 };
 
 #endif

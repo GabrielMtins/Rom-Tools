@@ -35,7 +35,8 @@ class App {
 
 		CanvasList canvas_list;
 		Toolbar toolbar;
-		PaletteMenu palette_menu;
+
+		std::unique_ptr<PaletteMenu> palette_menu;
 
 		static constexpr uint32_t MIN_TIME_FRAME = 16;
 };

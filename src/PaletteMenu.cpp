@@ -17,14 +17,70 @@ static constexpr std::array<uint32_t, FAMICOM_PALETTE_SIZE> famicom_palette = {
 	0xFFF8D878, 0xFFD8F878, 0xFFB8F8B8, 0xFFB8F8D8, 0xFF00FCFC, 0xFFD8D8D8, 0xFF000000, 0xFF000000
 };
 
+std::unique_ptr<PaletteMenu> PaletteMenu::create(SDL_Renderer *renderer) {
+	auto palette_menu = std::make_unique<PaletteMenu>();
+
+	palette_menu->palette_texture = SDL_CreateTexture(
+			renderer,
+			SDL_PIXELFORMAT_ARGB32,
+			SDL_TEXTUREACCESS_TARGET,
+			TEXTURE_WIDTH,
+			TEXTURE_HEIGHT
+			);
+
+	return palette_menu;
+}
+
+void PaletteMenu::drawPaleteTexture(Canvas& canvas, SDL_Renderer *renderer) {
+	const auto& palette = canvas.getRomData().palette;
+
+	SDL_SetRenderTarget(renderer, palette_texture);
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xff);
+	SDL_RenderClear(renderer);
+
+	// retângulo branco de "escolha"
+	{
+		SDL_Rect rect = {
+			int(canvas.getColorFg() % 4) * TILE_WIDTH,
+			int(canvas.getColorFg() / 4) * TILE_HEIGHT,
+			TILE_WIDTH,
+			TILE_HEIGHT
+		};
+
+		SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
+		SDL_RenderFillRect(renderer, &rect);
+	}
+
+	for(int j = 0; j < 4; j++) {
+		for(int i = 0; i < 4; i++) {
+			SDL_Rect rect = {
+				i * TILE_WIDTH + 3,
+				j * TILE_HEIGHT + 3,
+				TILE_WIDTH - 6,
+				TILE_HEIGHT - 6
+			};
+
+			SDL_SetRenderDrawColor(
+					renderer,
+					PALETTE_GET_R(palette[i + j * 4]),
+					PALETTE_GET_G(palette[i + j * 4]),
+					PALETTE_GET_B(palette[i + j * 4]),
+					0xff
+					);
+
+			SDL_RenderFillRect(renderer, &rect);
+		}
+	}
+
+	SDL_SetRenderTarget(renderer, NULL);
+}
+
 void PaletteMenu::render(Canvas& canvas) {
-	ImGui::Begin("Palette Menu", &open);
+	ImGui::Begin("Palette Menu");
 	ImGui::Text("ROM Palette");
 
 	drawPaletteRects(
-			canvas,
-			canvas.getRomData().palette,
-			canvas.getRomData().getMaxColors()
+			canvas
 			);
 
 	ImGui::Separator();
@@ -43,50 +99,42 @@ void PaletteMenu::render(Canvas& canvas) {
 	ImGui::End();
 }
 
-void PaletteMenu::drawPaletteRects(Canvas& canvas, const Palette& palette, size_t num_colors) {
-	static constexpr ImVec2 rect_size(48, 48);
+PaletteMenu::~PaletteMenu(void) {
+	if(palette_texture != NULL) {
+		SDL_DestroyTexture(palette_texture);
+	}
+}
 
-	ImGui::BeginGroup();
+void PaletteMenu::drawPaletteRects(Canvas& canvas) {
+	size_t num_colors = canvas.getRomData().getMaxColors();
+	int vertical_slice = num_colors / 4;
 
-	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 2));
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 4);
-	ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
+	ImGui::Image(
+			(ImTextureID) palette_texture,
+			ImVec2(160, 40),
+			ImVec2(0.0f, 0.0f),
+			ImVec2(1.0f, float(vertical_slice) / 4)
+			);
 
-	for(size_t i = 0; i < num_colors; i++) {
-		ImVec4 current_color = getVec4Color(palette[i]);
-
-		if(i == canvas.getColorFg()) {
-			ImGui::PushStyleColor(ImGuiCol_Border, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
-		} else {
-			//ImGui::PushStyleColor(ImGuiCol_Button, getDimmedColor(current_color));
-			ImGui::PushStyleColor(ImGuiCol_Border, ImGui::GetStyleColorVec4(ImGuiCol_Button));
-		}
-
-		ImGui::PushStyleColor(ImGuiCol_Button, current_color);
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, current_color);
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, current_color);
-
-		bool clicked = ImGui::Button(
-				("##romcolor" + std::to_string(i)).c_str(),
-				rect_size
-				);
-
-		if(clicked) {
-			canvas.selectColorFg(i);
-		}
-
-		ImGui::PopStyleColor(4);
-
-		if(i + 1 < num_colors) {
-			ImGui::SameLine();
-		}
+	if(!ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+		return;
 	}
 
-	ImGui::PopStyleVar(4);
+	if(!ImGui::IsItemHovered()) {
+		return;
+	}
 
+	ImVec2 image_pos = ImGui::GetItemRectMin();
+	ImVec2 image_size = ImGui::GetItemRectSize();
+	ImVec2 mouse_pos = ImGui::GetMousePos();
 
-	ImGui::EndGroup();
+	int actual_pos_x = int((mouse_pos.x - image_pos.x) * 4 / image_size.x) % 4;
+	int actual_pos_y = int((mouse_pos.y - image_pos.y) * vertical_slice / image_size.y) % vertical_slice;
+
+	if(actual_pos_x < 0) actual_pos_x = 0;
+	if(actual_pos_y < 0) actual_pos_y = 0;
+
+	canvas.selectColorFg(actual_pos_x + actual_pos_y * 4);
 }
 
 uint32_t PaletteMenu::drawMainPalette(void) {

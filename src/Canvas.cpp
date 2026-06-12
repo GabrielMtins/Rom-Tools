@@ -36,7 +36,7 @@ std::unique_ptr<Canvas> Canvas::create(SDL_Renderer *renderer, const std::string
 
 	canvas->window_name = rom_path + "##" + std::to_string(unique_identifier++);
 
-	canvas->rom.setViewerFormat(ROM_TYPE_NES);
+	//canvas->rom.setViewerFormat(ROM_TYPE_NES);
 
 	if(viewer_copy == nullptr) {
 		viewer_copy = TileViewer::create(renderer);
@@ -66,10 +66,14 @@ Canvas::Tool Canvas::getTool(void) {
 }
 
 void Canvas::selectColorFg(uint8_t color) {
+	if(color >= rom.getMaxColors()) return;
+
 	selected_color_fg = color;
 }
 
 void Canvas::selectColorBg(uint8_t color) {
+	if(color >= rom.getMaxColors()) return;
+
 	selected_color_bg = color;
 }
 
